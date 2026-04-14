@@ -1,10 +1,22 @@
 'use strict';
 
+// Load captcha config from secrets.js or environment variables
+let hcaptcha, google, yandex;
+try {
+	const secrets = require(__dirname+'/configs/secrets.js');
+	hcaptcha = secrets.hcaptcha;
+	google = secrets.google;
+	yandex = secrets.yandex;
+} catch (e) {
+	hcaptcha = process.env.HCAPTCHA_SITE_KEY ? { siteKey: process.env.HCAPTCHA_SITE_KEY, secretKey: process.env.HCAPTCHA_SECRET_KEY } : null;
+	google = process.env.GOOGLE_CAPTCHA_SITE_KEY ? { siteKey: process.env.GOOGLE_CAPTCHA_SITE_KEY, secretKey: process.env.GOOGLE_CAPTCHA_SECRET_KEY } : null;
+	yandex = process.env.YANDEX_SITE_KEY ? { siteKey: process.env.YANDEX_SITE_KEY, secretKey: process.env.YANDEX_SECRET_KEY } : null;
+}
+
 const config = require(__dirname+'/lib/misc/config.js')
 	, { Binary } = require('mongodb')
 	, Permission = require(__dirname+'/lib/permission/permission.js')
 	, { Permissions } = require(__dirname+'/lib/permission/permissions.js')
-	, { hcaptcha, google, yandex } = require(__dirname+'/configs/secrets.js')
 	, gulp = require('gulp')
 //	, pugRuntime = require('pug-runtime/build')
 	, fs = require('fs-extra')

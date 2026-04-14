@@ -1,8 +1,16 @@
 'use strict';
 
+// Load debugLogs from secrets.js or environment variables
+let debugLogs;
+try {
+	const secrets = require(__dirname+'/../../configs/secrets.js');
+	debugLogs = secrets.debugLogs;
+} catch (e) {
+	debugLogs = process.env.DEBUG_LOGS === 'true';
+}
+
 const { Boards, Posts, Modlogs } = require(__dirname+'/../../db/')
 	, ModlogActions = require(__dirname+'/../../lib/input/modlogactions.js')
-	, { debugLogs } = require(__dirname+'/../../configs/secrets.js')
 	, dynamicResponse = require(__dirname+'/../../lib/misc/dynamic.js')
 	, config = require(__dirname+'/../../lib/misc/config.js')
 	, uploadDirectory = require(__dirname+'/../../lib/file/uploaddirectory.js')

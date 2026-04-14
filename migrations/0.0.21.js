@@ -3,7 +3,12 @@
 module.exports = async(db, redis) => {
 	console.log('migrate old config to db');
 	const oldSettings = require(__dirname+'/../configs/main.js');
-	const secrets = require(__dirname+'/../configs/secrets.js');
+	let secrets;
+	try {
+		secrets = require(__dirname+'/../configs/secrets.js');
+	} catch (e) {
+		secrets = {};
+	}
 	//delete anythign thats in the secrets
 	Object.keys(secrets).forEach(key => {
 		delete oldSettings[key];

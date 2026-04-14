@@ -1,7 +1,15 @@
 'use strict';
 
-const { debugLogs } = require(__dirname+'/../../configs/secrets.js')
-	, config = require(__dirname+'/../../lib/misc/config.js')
+// Load debugLogs from secrets.js or environment variables
+let debugLogs;
+try {
+	const secrets = require(__dirname+'/../../configs/secrets.js');
+	debugLogs = secrets.debugLogs;
+} catch (e) {
+	debugLogs = process.env.DEBUG_LOGS === 'true';
+}
+
+const config = require(__dirname+'/../../lib/misc/config.js')
 	, Redis = require(__dirname+'/../../lib/redis/redis.js')
 	, { Boards, Accounts } = require(__dirname+'/../../db/')
 	, timeUtils = require(__dirname+'/../../lib/converter/timeutils.js');

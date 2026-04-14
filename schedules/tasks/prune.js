@@ -1,7 +1,15 @@
 'use strict';
 
+// Load debugLogs from secrets.js or environment variables
+let debugLogs;
+try {
+	const secrets = require(__dirname+'/../../configs/secrets.js');
+	debugLogs = secrets.debugLogs;
+} catch (e) {
+	debugLogs = process.env.DEBUG_LOGS === 'true';
+}
+
 const Files = require(__dirname+'/../../db/files.js')
-	, { debugLogs } =  require(__dirname+'/../../configs/secrets.js')
 	, { remove } = require('fs-extra')
 	, uploadDirectory = require(__dirname+'/../../lib/file/uploaddirectory.js')
 	, timeUtils = require(__dirname+'/../../lib/converter/timeutils.js');
