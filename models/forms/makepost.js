@@ -31,11 +31,19 @@ const { createHash, randomBytes } = require('crypto')
 	, deletePosts = require(__dirname+'/deletepost.js')
 	, spamCheck = require(__dirname+'/../../lib/middleware/misc/spamcheck.js')
 	, config = require(__dirname+'/../../lib/misc/config.js')
-	, { postPasswordSecret } = require(__dirname+'/../../configs/secrets.js')
 	, buildQueue = require(__dirname+'/../../lib/build/queue.js')
 	, dynamicResponse = require(__dirname+'/../../lib/misc/dynamic.js')
 	, { buildThread } = require(__dirname+'/../../lib/build/tasks.js')
 	, FIELDS_TO_REPLACE = ['email', 'subject', 'message'];
+
+// Load postPasswordSecret from secrets.js or environment variables
+let postPasswordSecret;
+try {
+	const secrets = require(__dirname+'/../../configs/secrets.js');
+	postPasswordSecret = secrets.postPasswordSecret;
+} catch (e) {
+	postPasswordSecret = process.env.POST_PASSWORD_SECRET || 'default-post-password-secret';
+}
 
 module.exports = async (req, res) => {
 

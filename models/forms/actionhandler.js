@@ -20,9 +20,17 @@ const { Posts, Boards, Modlogs } = require(__dirname+'/../../db/')
 	, dynamicResponse = require(__dirname+'/../../lib/misc/dynamic.js')
 	, { Permissions } = require(__dirname+'/../../lib/permission/permissions.js')
 	, buildQueue = require(__dirname+'/../../lib/build/queue.js')
-	, { postPasswordSecret } = require(__dirname+'/../../configs/secrets.js')
 	, threadRegex = /\/[a-z0-9]+\/(?:manage\/)?thread\/(\d+)\.html/i
 	, { createHash, timingSafeEqual } = require('crypto');
+
+// Load postPasswordSecret from secrets.js or environment variables
+let postPasswordSecret;
+try {
+	const secrets = require(__dirname+'/../../configs/secrets.js');
+	postPasswordSecret = secrets.postPasswordSecret;
+} catch (e) {
+	postPasswordSecret = process.env.POST_PASSWORD_SECRET || 'default-post-password-secret';
+}
 
 module.exports = async (req, res, next) => {
 

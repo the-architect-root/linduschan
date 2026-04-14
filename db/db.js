@@ -1,15 +1,26 @@
 'use strict';
 
-const secrets = require(__dirname+'/../configs/secrets.js')
-	, { MongoClient, ObjectId, Int32, Binary } = require('mongodb')
+// Load config from secrets.js or environment variables
+let dbURL, dbName;
+try {
+	const secrets = require(__dirname+'/../configs/secrets.js');
+	dbURL = secrets.dbURL;
+	dbName = secrets.dbName;
+} catch (e) {
+	// Fallback to environment variables
+	dbURL = process.env.MONGODB_URL;
+	dbName = process.env.DB_NAME || 'jschan';
+}
+
+const { MongoClient, ObjectId, Int32, Binary } = require('mongodb')
 	, { migrateVersion } = require(__dirname+'/../package.json');
 
 module.exports = {
 
 	connect: async () => {
-		module.exports.client = new MongoClient(secrets.dbURL);
+		module.exports.client = new MongoClient(dbURL);
 		await module.exports.client.connect();
-		module.exports.db = module.exports.client.db(secrets.dbName);
+		module.exports.db = module.exports.client.db(dbName);
 	},
 
 	//do i really want a separate fuckin file just for these? lol

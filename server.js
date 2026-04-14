@@ -9,9 +9,29 @@ const config = require(__dirname+'/lib/misc/config.js')
 	, path = require('path')
 	, app = express()
 	, server = require('http').createServer(app)
-	, cookieParser = require('cookie-parser')
-	, { port, cookieSecret, debugLogs, google, hcaptcha, yandex } = require(__dirname+'/configs/secrets.js')
-	, Mongo = require(__dirname+'/db/db.js')
+	, cookieParser = require('cookie-parser');
+
+// Load config from secrets.js or environment variables
+let port, cookieSecret, debugLogs, google, hcaptcha, yandex;
+try {
+	const secrets = require(__dirname+'/configs/secrets.js');
+	port = secrets.port;
+	cookieSecret = secrets.cookieSecret;
+	debugLogs = secrets.debugLogs;
+	google = secrets.google;
+	hcaptcha = secrets.hcaptcha;
+	yandex = secrets.yandex;
+} catch (e) {
+	// Fallback to environment variables
+	port = parseInt(process.env.PORT) || 3000;
+	cookieSecret = process.env.COOKIE_SECRET || 'default-secret';
+	debugLogs = process.env.DEBUG_LOGS === 'true';
+	google = process.env.GOOGLE_CAPTCHA_SITE_KEY ? { siteKey: process.env.GOOGLE_CAPTCHA_SITE_KEY, secretKey: process.env.GOOGLE_CAPTCHA_SECRET_KEY } : null;
+	hcaptcha = process.env.HCAPTCHA_SITE_KEY ? { siteKey: process.env.HCAPTCHA_SITE_KEY, secretKey: process.env.HCAPTCHA_SECRET_KEY } : null;
+	yandex = process.env.YANDEX_SITE_KEY ? { siteKey: process.env.YANDEX_SITE_KEY, secretKey: process.env.YANDEX_SECRET_KEY } : null;
+}
+
+const Mongo = require(__dirname+'/db/db.js')
 	, dynamicResponse = require(__dirname+'/lib/misc/dynamic.js')
 	, commit = require(__dirname+'/lib/misc/commit.js')
 	, { version } = require(__dirname+'/package.json')
