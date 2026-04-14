@@ -666,6 +666,7 @@ module.exports = async (req, res) => {
 	};
 	if (data.thread) {
 		//dont emit thread to this socket, because the room only exists when the thread is open
+		console.log('Emitting newPost to room:', `${res.locals.board._id}-${data.thread}`);
 		Socketio.emitRoom(`${res.locals.board._id}-${data.thread}`, 'newPost', projectedPost);
 	}
 	const { raw, cloak, type } = data.ip;
