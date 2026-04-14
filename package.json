@@ -71,7 +71,6 @@
     "test:integration": "jest --testPathPattern=./test/",
     "test:all": "jest --verbose",
     "setup": "npx gulp generate-favicon && npx gulp default",
-    "build": "npx gulp generate-favicon && npx gulp default",
     "start": "pm2 start ecosystem.config.js --env production",
     "start-dev": "pm2 start ecosystem.config.js --env development"
   },
