@@ -1,0 +1,56 @@
+extends ../layout.pug
+
+block head
+	title Blocked Boards
+
+block content
+	h1.board-title Blocked Boards
+	
+	.flexcenter.mv-10
+		form(action='/forms/blockboard' method='POST')
+			input(type='hidden' name='_csrf' value=csrf)
+			.row
+				.label Board URI
+				input(type='text' name='boardUri' placeholder='e.g. b' required)
+			.row
+				.label Block Type
+				select(name='blockType' required)
+					option(value='temporary') Temporary
+					option(value='permanent') Permanent
+			.row#durationRow
+				.label Duration (e.g. 24h, 7d, 30m)
+				input(type='text' name='duration' placeholder='24h')
+			input(type='submit' value='Block Board')
+	
+	if blockedBoards && blockedBoards.length > 0
+		.table-container.flexcenter.mv-10
+			table.boardtable
+				tr
+					th Board
+					th Type
+					th Blocked At
+					th Expires At
+					th Status
+					th Actions
+				each block in blockedBoards
+					tr
+						td #{boardNames[block.boardUri] || block.boardUri}
+						td #{block.blockType === 'temporary' ? 'Temporary' : 'Permanent'}
+						td #{new Date(block.blockedAt).toLocaleString()}
+						if block.blockType === 'temporary' && block.expiryTime
+							td #{new Date(block.expiryTime).toLocaleString()}
+						else
+							td -
+						td 
+							if block.approvalStatus
+								span(class=block.approvalStatus === 'pending' ? 'warning' : block.approvalStatus === 'approved' ? 'success' : 'error')
+									| #{block.approvalStatus}
+							else
+								| Active
+						td
+							form(action='/forms/unblockboard' method='POST' style='display:inline')
+								input(type='hidden' name='_csrf' value=csrf)
+								input(type='hidden' name='boardUri' value=block.boardUri)
+								input(type='submit' value='Unblock')
+	else
+		p You have no blocked boards.

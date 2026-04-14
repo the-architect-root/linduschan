@@ -176,6 +176,33 @@ class postFormHandler {
 		}
 	}
 
+	startCooldown(duration) {
+		const cooldownDiv = this.form.querySelector('#cooldown-timer');
+		const cooldownSeconds = this.form.querySelector('#cooldown-seconds');
+		if (!cooldownDiv || !cooldownSeconds) return;
+
+		//disable submit button
+		if (this.submit) {
+			this.submit.disabled = true;
+		}
+
+		let remaining = Math.floor(duration / 1000);
+		cooldownSeconds.textContent = remaining;
+		cooldownDiv.style.display = 'block';
+
+		const timer = setInterval(() => {
+			remaining--;
+			cooldownSeconds.textContent = remaining;
+			if (remaining <= 0) {
+				clearInterval(timer);
+				cooldownDiv.style.display = 'none';
+				if (this.submit) {
+					this.submit.disabled = false;
+				}
+			}
+		}, 1000);
+	}
+
 	doTegaki() {
 		clearInterval(this.canvasCheckInterval);
 		if ((this.canvasBlocked = isCanvasBlocked())
@@ -423,6 +450,9 @@ class postFormHandler {
 						if (this.resetOnSubmit) {
 							this.reset();
 						}
+
+						//start 60s cooldown timer
+						this.startCooldown(60000);
 
 					} else {
 

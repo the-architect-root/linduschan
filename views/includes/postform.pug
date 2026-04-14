@@ -96,4 +96,8 @@ section.form-wrapper.flex-center
 			else
 				include ./captchaexpand.pug
 		input#submitpost(type='submit', value=(isThread ? __('New Reply') : __('New Thread')))
+		div#cooldown-timer.jsonly(style='display:none; margin-top:5px; font-weight:bold; color:#d00;')
+			span #{__('Wait')}: 
+			span#cooldown-seconds 60
+			span #{__('seconds to post again')}
 	a.collapse.no-decoration.post-button(href='#postform') [#{isThread ? __('New Reply') : __('New Thread')}]

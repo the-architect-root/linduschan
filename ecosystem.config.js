@@ -4,16 +4,17 @@ module.exports = {
 	apps : [{
 		name: 'build-worker',
 		script: 'worker.js',
-		instances: Math.ceil(numCpus*0.75),
+		cwd: '/home/alt/Desktop/jschan',
+		instances: 1,
 		autorestart: true,
 		watch: false,
 		max_memory_restart: '1G',
 		log_date_format: 'YYYY-MM-DD HH:mm:ss.SSS',
 		env: {
-			NODE_ENV: 'development'
+			NODE_ENV: 'production'
 		},
 		env_development: {
-			NODE_ENV: 'development'
+			NODE_ENV: 'production'
 		},
 		env_production: {
 			NODE_ENV: 'production'
@@ -21,7 +22,8 @@ module.exports = {
 	}, {
 		name: 'chan',
 		script: 'server.js',
-		instances: Math.ceil(numCpus*0.75),
+		cwd: '/home/alt/Desktop/jschan',
+		instances: 1,
 		autorestart: true,
 		watch: false,
 		max_memory_restart: '1G',
@@ -29,7 +31,7 @@ module.exports = {
 		wait_ready: true,
 		kill_timeout: 5000,
 		env: {
-			NODE_ENV: 'development'
+			NODE_ENV: 'production'
 		},
 		env_production: {
 			NODE_ENV: 'production'
@@ -37,16 +39,17 @@ module.exports = {
 	}, {
 		name: 'schedules',
 		script: 'schedules/index.js',
+		cwd: '/home/alt/Desktop/jschan',
 		instances: 1,
 		autorestart: true,
 		watch: false,
 		max_memory_restart: '1G',
 		log_date_format: 'YYYY-MM-DD HH:mm:ss.SSS',
 		env: {
-			NODE_ENV: 'development'
+			NODE_ENV: 'production'
 		},
 		env_development: {
-			NODE_ENV: 'development'
+			NODE_ENV: 'production'
 		},
 		env_production: {
 			NODE_ENV: 'production'

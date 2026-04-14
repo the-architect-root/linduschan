@@ -75,7 +75,7 @@ module.exports = {
 	floodTimers: { //basic delays to stop flooding, in ms. 0 to disable
 		sameContentSameIp: 120000, //same message or any file from same ip
 		sameContentAnyIp: 30000, //same message or file from any ip
-		anyContentSameIp: 5000, //any post from the same ip
+		anyContentSameIp: 60000, //60 second cooldown between posts from same ip (like 4chan)
 	},
 
 	//block bypasses
@@ -378,7 +378,7 @@ module.exports = {
 	//default board settings when a board is created
 	boardDefaults: {
 		language: 'en-GB',
-		theme: 'yotsuba-b',
+		theme: 'indusglow',
 		codeTheme: 'ir-black',
 		sfw: false, //safe for work board
 		lockMode: 0, //board lock mode

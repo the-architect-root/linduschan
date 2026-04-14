@@ -250,4 +250,150 @@ module.exports = {
 		return db.deleteMany({});
 	},
 
+	addBlockedBoard: async (username, boardUri, blockType, expiryTime = null) => {
+		const blockData = {
+			boardUri,
+			blockType, // 'temporary' or 'permanent'
+			blockedAt: new Date(),
+		};
+		if (blockType === 'temporary' && expiryTime) {
+			blockData.expiryTime = new Date(expiryTime);
+		} else if (blockType === 'permanent') {
+			blockData.approvalStatus = 'none'; // permanent blocks don't need approval to create, only to unblock
+		}
+		const res = await db.updateOne({
+			'_id': username
+		}, {
+			'$addToSet': {
+				'blockedBoards': blockData
+			}
+		});
+		cache.del(`users:${username}`);
+		return res;
+	},
+
+	removeBlockedBoard: async (username, boardUri) => {
+		const res = await db.updateOne({
+			'_id': username
+		}, {
+			'$pull': {
+				'blockedBoards': {
+					boardUri
+				}
+			}
+		});
+		cache.del(`users:${username}`);
+		return res;
+	},
+
+	isBoardBlocked: async (username, boardUri) => {
+		const account = await db.findOne({
+			'_id': username,
+			'blockedBoards.boardUri': boardUri
+		}, {
+			'projection': {
+				'blockedBoards.$': 1
+			}
+		});
+		if (!account || !account.blockedBoards || account.blockedBoards.length === 0) {
+			return false;
+		}
+		const blockedBoard = account.blockedBoards[0];
+		
+		// Check if temporary block has expired
+		if (blockedBoard.blockType === 'temporary' && blockedBoard.expiryTime) {
+			if (new Date() > new Date(blockedBoard.expiryTime)) {
+				// Block has expired, remove it
+				await exports.removeBlockedBoard(username, boardUri);
+				return false;
+			}
+			return true;
+		}
+		
+		// Permanent block
+		if (blockedBoard.blockType === 'permanent') {
+			return true;
+		}
+		
+		return false;
+	},
+
+	requestUnblockApproval: async (username, boardUri) => {
+		const res = await db.updateOne({
+			'_id': username,
+			'blockedBoards.boardUri': boardUri
+		}, {
+			'$set': {
+				'blockedBoards.$.approvalStatus': 'pending',
+				'blockedBoards.$.approvalRequestedAt': new Date(),
+			}
+		});
+		cache.del(`users:${username}`);
+		return res;
+	},
+
+	approveUnblock: async (username, boardUri, adminUsername) => {
+		const res = await db.updateOne({
+			'_id': username,
+			'blockedBoards.boardUri': boardUri
+		}, {
+			'$set': {
+				'blockedBoards.$.approvalStatus': 'approved',
+				'blockedBoards.$.approvedBy': adminUsername,
+				'blockedBoards.$.approvedAt': new Date(),
+			}
+		});
+		cache.del(`users:${username}`);
+		return res;
+	},
+
+	rejectUnblock: async (username, boardUri, adminUsername) => {
+		const res = await db.updateOne({
+			'_id': username,
+			'blockedBoards.boardUri': boardUri
+		}, {
+			'$set': {
+				'blockedBoards.$.approvalStatus': 'rejected',
+				'blockedBoards.$.approvedBy': adminUsername,
+				'blockedBoards.$.approvedAt': new Date(),
+			}
+		});
+		cache.del(`users:${username}`);
+		return res;
+	},
+
+	getBlockedBoards: async (username) => {
+		const account = await db.findOne({
+			'_id': username
+		}, {
+			'projection': {
+				'blockedBoards': 1
+			}
+		});
+		if (!account || !account.blockedBoards) {
+			return [];
+		}
+		// Filter out expired temporary blocks
+		const validBlocks = account.blockedBoards.filter(block => {
+			if (block.blockType === 'temporary' && block.expiryTime) {
+				return new Date() <= new Date(block.expiryTime);
+			}
+			return true;
+		});
+		
+		// Update database if any blocks expired
+		if (validBlocks.length !== account.blockedBoards.length) {
+			await db.updateOne({
+				'_id': username
+			}, {
+				'$set': {
+					'blockedBoards': validBlocks
+				}
+			});
+			cache.del(`users:${username}`);
+		}
+		
+		return validBlocks;
+	},
+
 };

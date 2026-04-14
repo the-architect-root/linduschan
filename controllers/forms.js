@@ -30,7 +30,7 @@ const express  = require('express')
 		deleteAccountsController, editAccountController, addFilterController, editFilterController, deleteFilterController, 
 		globalSettingsController, createBoardController, makePostController, addStaffController, deleteStaffController, 
 		editStaffController, editCustomPageController, editPostController, editRoleController, newCaptchaForm, 
-		blockBypassForm, logoutForm, deleteSessionsController, globalClearController } = require(__dirname+'/forms/index.js');
+		blockBypassForm, logoutForm, deleteSessionsController, globalClearController, blockBoardController } = require(__dirname+'/forms/index.js');
 
 //make new post
 router.post('/board/:board/post', geoIp, processIp, useSession, sessionRefresh, Boards.exists, setBoardLanguage, calcPerms, banCheck, fileMiddlewares.posts,
@@ -134,6 +134,14 @@ router.post('/changepassword', geoIp, processIp, useSession, sessionRefresh, ver
 router.post('/resign', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, resignController.paramConverter, resignController.controller);
 router.post('/deleteaccount', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, deleteAccountController.paramConverter, deleteAccountController.controller);
 router.post('/deletesessions', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, deleteSessionsController.paramConverter, deleteSessionsController.controller);
+
+//block/unblock boards
+router.post('/blockboard', useSession, sessionRefresh, calcPerms, isLoggedIn, blockBoardController.blockBoard);
+router.post('/unblockboard', useSession, sessionRefresh, calcPerms, isLoggedIn, blockBoardController.unblockBoard);
+router.get('/blockedboards', useSession, sessionRefresh, calcPerms, isLoggedIn, blockBoardController.getBlockedBoards);
+router.post('/approveunblock', useSession, sessionRefresh, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.approveUnblockRequest);
+router.post('/rejectunblock', useSession, sessionRefresh, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.rejectUnblockRequest);
+router.get('/unblockrequests', useSession, sessionRefresh, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.getAllUnblockRequests);
 
 //removes captcha cookie, for refreshing for noscript users
 router.post('/newcaptcha', newCaptchaForm);

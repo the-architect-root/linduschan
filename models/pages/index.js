@@ -27,6 +27,7 @@ module.exports = {
 	modlog: require(__dirname+'/modlog.js'),
 	modloglist: require(__dirname+'/modloglist.js'),
 	boardlist: require(__dirname+'/boardlist.js'),
+	blockedBoards: require(__dirname+'/blockedboards.js'),
 	overboard: require(__dirname+'/overboard.js'),
 	overboardCatalog: require(__dirname+'/overboardcatalog.js'),
 };

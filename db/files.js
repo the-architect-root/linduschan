@@ -88,6 +88,13 @@ module.exports = {
 		});
 	},
 
+	getRecent: (limit=10) => {
+		return db.find()
+			.sort({ '_id': -1 })
+			.limit(limit)
+			.toArray();
+	},
+
 	deleteAll: () => {
 		return db.deleteMany({});
 	}

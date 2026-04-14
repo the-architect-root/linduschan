@@ -15,6 +15,10 @@ module.exports = {
 
 	db,
 
+	totalPosts: () => {
+		return db.countDocuments();
+	},
+
 	getThreadPage: async (board, thread) => {
 		const threadsBefore = await db.aggregate([
 			{
@@ -95,15 +99,23 @@ module.exports = {
 		const threadsQuery = {
 			'thread': null,
 		};
+		// Exclude specific boards from overboard and homepage
+		const excludedBoards = ['gama', 'v', 'samaj'];
 		if (board) {
 			if (Array.isArray(board)) {
-				//array for overboard
+				//array for overboard - filter out excluded boards
+				const filteredBoards = board.filter(b => !excludedBoards.includes(b));
 				threadsQuery['board'] = {
-					'$in': board
+					'$in': filteredBoards
 				};
 			} else {
 				threadsQuery['board'] = board;
 			}
+		} else {
+			// For homepage (no board specified), exclude these boards
+			threadsQuery['board'] = {
+				'$nin': excludedBoards
+			};
 		}
 		let threadsSort = {
 			'bumped': -1,

@@ -52,6 +52,7 @@ const config = require(__dirname+'/lib/misc/config.js')
 
 	// session store
 	const sessionMiddleware = require(__dirname+'/lib/middleware/permission/usesession.js');
+	app.use(sessionMiddleware);
 
 	// connect socketio
 	const Socketio = require(__dirname+'/lib/misc/socketio.js');
@@ -74,7 +75,7 @@ const config = require(__dirname+'/lib/misc/config.js')
 		app[cacheTemplates === true ? 'enable' : 'disable']('view cache');
 		//default settings
 		app.locals.Permissions = Permissions;
-		app.locals.defaultTheme = boardDefaults.theme;
+		app.locals.defaultTheme = 'indusglow';
 		app.locals.defaultCodeTheme = boardDefaults.codeTheme;
 		app.locals.globalLimits = globalLimits;
 		app.locals.ethereumLinksURL = ethereumLinksURL;
@@ -98,12 +99,14 @@ const config = require(__dirname+'/lib/misc/config.js')
 	loadAppLocals();
 	redis.addCallback('config', loadAppLocals);
 
+	// blocked board check for static files
+	const blockedBoardStatic = require(__dirname+'/lib/middleware/blockedboardstatic.js');
+	app.use(blockedBoardStatic);
+
 	// routes
-	if (!production) {
-		app.use(express.static(__dirname+'/static', { redirect: false }));
-		app.use(express.static(__dirname+'/static/html', { redirect: false }));
-		app.use(express.static(__dirname+'/static/json', { redirect: false }));
-	}
+	app.use(express.static(__dirname+'/static', { redirect: false }));
+	app.use(express.static(__dirname+'/static/html', { redirect: false }));
+	app.use(express.static(__dirname+'/static/json', { redirect: false }));
 
 	//localisation
 	const { setGlobalLanguage } = require(__dirname+'/lib/middleware/locale/locale.js');
@@ -165,17 +168,19 @@ const config = require(__dirname+'/lib/misc/config.js')
 		});
 	});
 
-	//listen
-	server.listen(port, (process.env.JSCHAN_IP || '127.0.0.1'), () => {
-		new CachePugTemplates({ app, views }).start();
-		debugLogs && console.log(`LISTENING ON :${port}`);
-		//let PM2 know that this is ready for graceful reloads and to serialise startup
-		if (typeof process.send === 'function') {
-			//make sure we are a child process of PM2 i.e. not in dev
-			debugLogs && console.log('SENT READY SIGNAL TO PM2');
-			process.send('ready');
-		}
-	});
+	//listen only if not in Vercel (Vercel uses serverless)
+	if (!process.env.VERCEL && !process.env.NOW_REGION) {
+		server.listen(port, (process.env.JSCHAN_IP || '127.0.0.1'), () => {
+			new CachePugTemplates({ app, views }).start();
+			debugLogs && console.log(`LISTENING ON :${port}`);
+			//let PM2 know that this is ready for graceful reloads and to serialise startup
+			if (typeof process.send === 'function') {
+				//make sure we are a child process of PM2 i.e. not in dev
+				debugLogs && console.log('SENT READY SIGNAL TO PM2');
+				process.send('ready');
+			}
+		});
+	}
 
 	const gracefulStop = () => {
 		debugLogs && console.log('SIGINT SIGNAL RECEIVED');
@@ -206,4 +211,14 @@ const config = require(__dirname+'/lib/misc/config.js')
 		}
 	});
 
+	// Export for Vercel (only after full initialization)
+	if (process.env.VERCEL || process.env.NOW_REGION) {
+		module.exports = app;
+	}
+
 })();
+
+// Export for local/PM2 (app will be ready when this is required after async init)
+if (!process.env.VERCEL && !process.env.NOW_REGION) {
+	module.exports = app;
+}

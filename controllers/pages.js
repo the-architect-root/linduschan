@@ -16,6 +16,7 @@ const express  = require('express')
 	, sessionRefresh = require(__dirname+'/../lib/middleware/permission/sessionrefresh.js')
 	, csrf = require(__dirname+'/../lib/middleware/misc/csrfmiddleware.js')
 	, setMinimal = require(__dirname+'/../lib/middleware/misc/setminimal.js')
+	, blockedBoard = require(__dirname+'/../lib/middleware/blockedboard.js')
 	, { setBoardLanguage, setQueryLanguage } = require(__dirname+'/../lib/middleware/locale/locale.js')
 	//page models
 	, { manageRecent, manageReports, manageAssets, manageSettings, manageBans, manageFilters, editFilter, editCustomPage, manageMyPermissions,
@@ -24,7 +25,7 @@ const express  = require('express')
 		globalManageRecent, globalManageAccounts, globalManageNews, globalManageLogs, globalManageRoles } = require(__dirname+'/../models/pages/globalmanage/')
 	, { changePassword, blockBypass, home, register, login, create, myPermissions, sessions, setupTwoFactor,
 		board, catalog, banners, boardSettings, globalSettings, randombanner, news, captchaPage, overboard, overboardCatalog,
-		captcha, thread, modlog, modloglist, account, boardlist, customPage, csrfPage, noncePage } = require(__dirname+'/../models/pages/')
+		captcha, thread, modlog, modloglist, account, boardlist, customPage, csrfPage, noncePage, blockedBoards } = require(__dirname+'/../models/pages/')
 	, threadParamConverter = paramConverter({ processThreadIdParam: true })
 	, logParamConverter = paramConverter({ processDateParam: true })
 	, filterParamConverter = paramConverter({ objectIdParams: ['filterid'] })
@@ -46,9 +47,10 @@ router.get('/overboard.(html|json)', overboard); //overboard
 router.get('/catalog.(html|json)', overboardCatalog); //overboard catalog view
 
 //board pages
-router.get('/:board/:page(1[0-9]{1,}|[2-9][0-9]{0,}|index).(html|json)', Boards.exists, setBoardLanguage, board); //index
-router.get('/:board/thread/:id([1-9][0-9]{0,}).(html|json)', Boards.exists, setBoardLanguage, threadParamConverter, Posts.threadExistsMiddleware, thread); //thread view
-router.get('/:board/catalog.(html|json)', Boards.exists, setBoardLanguage, catalog); //catalog
+router.get('/:board/index.html', Boards.exists, setBoardLanguage, blockedBoard, board); //index
+router.get('/:board/:page(1[0-9]{1,}|[2-9][0-9]{0,}|index).(html|json)', Boards.exists, setBoardLanguage, blockedBoard, board); //index
+router.get('/:board/thread/:id([1-9][0-9]{0,}).(html|json)', Boards.exists, setBoardLanguage, blockedBoard, threadParamConverter, Posts.threadExistsMiddleware, thread); //thread view
+router.get('/:board/catalog.(html|json)', Boards.exists, setBoardLanguage, blockedBoard, catalog); //catalog
 router.get('/:board/logs.(html|json)', Boards.exists, setBoardLanguage, modloglist);//modlog list
 router.get('/:board/logs/:date(\\d{2}-\\d{2}-\\d{4}).(html|json)', Boards.exists, setBoardLanguage, logParamConverter, modlog); //daily log
 router.get('/:board/page/:page.(html|json)', Boards.exists, setBoardLanguage, customPage); //board custom page
@@ -130,10 +132,11 @@ router.get('/bypass.html', blockBypass); //block bypass page
 router.get('/bypass_minimal.html', setMinimal, setQueryLanguage, blockBypass); //block bypass page
 
 //accounts
-router.get('/account.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, account); //page showing boards you are mod/owner of, links to password rese, logout, etc
+router.get('/account.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, account);
 router.get('/mypermissions.html', useSession, sessionRefresh, isLoggedIn, calcPerms, myPermissions);
 router.get('/twofactor.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, setupTwoFactor);
 router.get('/sessions.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, sessions);
+router.get('/blockedboards.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, blockedBoards);
 router.get('/nonce/:address([a-zA-Z0-9]{42}).json', noncePage); //nonce for web3 logins
 router.get('/login.html', login);
 router.get('/register.html', register);

@@ -6,7 +6,8 @@ const uploadDirectory = require(__dirname+'/../../lib/file/uploaddirectory.js')
 	, Socketio = require(__dirname+'/../../lib/misc/socketio.js')
 	, config = require(__dirname+'/../../lib/misc/config.js')
 	, deleteQuotes = require(__dirname+'/../../lib/post/deletequotes.js')
-	, { func: pruneFiles } = require(__dirname+'/../../schedules/tasks/prune.js');
+	, { func: pruneFiles } = require(__dirname+'/../../schedules/tasks/prune.js')
+	, buildQueue = require(__dirname+'/../../lib/build/queue.js');
 
 module.exports = async (posts, board, locals, all=false) => {
 
@@ -138,6 +139,16 @@ module.exports = async (posts, board, locals, all=false) => {
 	}
 
 	const { __n, __ } = locals;
+
+	// Trigger page rebuilds to update stats
+	if (deletedPosts > 0) {
+		buildQueue.push({
+			'task': 'buildHomepage',
+		});
+		buildQueue.push({
+			'task': 'buildBoards',
+		});
+	}
 
 	//hooray!
 	return {

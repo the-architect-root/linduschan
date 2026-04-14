@@ -1,0 +1,27 @@
+name = "induschan-worker"
+main = "worker.js"
+compatibility_date = "2024-04-01"
+
+# Environment variables
+[vars]
+ENVIRONMENT = "production"
+
+# R2 bindings
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "induschan-files"
+
+# KV bindings for session storage (optional, can use Redis instead)
+# [[kv_namespaces]]
+# binding = "SESSIONS"
+# id = "your-kv-namespace-id"
+
+# D1 database (optional, can use MongoDB Atlas instead)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "induschan-db"
+# database_id = "your-database-id"
+
+# Scheduled events (for scheduled tasks)
+# [[triggers]]
+# crons = ["0 * * * *"]

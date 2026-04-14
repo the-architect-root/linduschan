@@ -20,44 +20,7 @@ mixin catalogtile(post, index, overboard=false)
 		data-bump=post.bumped)
 		- const postURL = `/${post.board}/${modview ? 'manage/' : ''}thread/${post.postId}.html`
 		.post-info
-			if overboard
-				div
-					| #{__('Thread from')} 
-					a.no-decoration.post-subject(href=`/${post.board}/`) /#{post.board}/
-			else
-				input.left.post-check(type='checkbox', name='checkedposts' value=post.postId)
-			if modview
-				a.left.ml-5.bold(href=`recent.html?postid=${post.postId}`) [+]
-			include ../includes/posticons.pug
-			if post.country && post.country.code
-				if post.country.custom === true
-					span(title=post.country.name)
-						img.customflag(src=`/flag/${post.board}/${post.country.src}` alt=' ' loading='lazy')
-					| 
-				else
-					span(class=`flag flag-${post.country.code.toLowerCase()}` title=post.country.name alt=post.country.name)
-					| 
 			a.no-decoration.post-subject(href=postURL) #{post.subject || `#${post.postId}`}
-			| 
-			select.jsonly.postmenu
-				option(value='single') #{__('Hide')}
-				if post.subject	
-					option(value='fsub') #{__('Filter Subject')}
-				if post.country && post.country.code
-					option(value='fflag') #{__('Filter Flag')}
-				if (modview || manage || globalmanage)
-					option(value='edit') #{__('Edit')}
-				if !overboard
-					option(value='moderate') #{__('Moderate')}
-				option(value='watch') #{__('Watch')}
-				option(value='playlist') #{__('Playlist')}
-			br 
-			span(title=__n('Replies', 2)) R: #{post.replyposts}
-			|  / 
-			span(title=__n('Files', 2)) F: #{post.replyfiles + post.files.length}
-			if !overboard
-				|  / 
-				span(title=__('Page')) P: #{Math.ceil(index/10)}
 		if post.files.length > 0
 			.col
 				.row.ct-r1

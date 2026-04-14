@@ -17,6 +17,7 @@ const { createHash, randomBytes } = require('crypto')
 	, moveUpload = require(__dirname+'/../../lib/file/moveupload.js')
 	, mimeTypes = require(__dirname+'/../../lib/file/mimetypes.js')
 	, imageThumbnail = require(__dirname+'/../../lib/file/image/imagethumbnail.js')
+	, stripMetadata = require(__dirname+'/../../lib/file/image/stripmetadata.js')
 	, getDimensions = require(__dirname+'/../../lib/file/image/getdimensions.js')
 	, videoThumbnail = require(__dirname+'/../../lib/file/video/videothumbnail.js')
 	, audioThumbnail = require(__dirname+'/../../lib/file/audio/audiothumbnail.js')
@@ -310,6 +311,10 @@ module.exports = async (req, res) => {
 								&& subtype !== 'png'
 								&& lteThumbSize);
 							await saveFull();
+							// Strip EXIF/metadata from original image
+							if (!existsFull) {
+								await stripMetadata(processedFile).catch(err => console.warn('Failed to strip metadata:', err));
+							}
 							if (!existsThumb) {
 								await imageThumbnail(processedFile);
 							}

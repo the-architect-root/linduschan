@@ -33,3 +33,5 @@ gulp/res/js/web3.js
 .idea/
 coverage/
 junit.xml
+.vercel
+.env*.local
