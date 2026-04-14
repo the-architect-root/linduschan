@@ -128,6 +128,33 @@ const Mongo = require(__dirname+'/db/db.js')
 	app.use(express.static(__dirname+'/static/html', { redirect: false }));
 	app.use(express.static(__dirname+'/static/json', { redirect: false }));
 
+	// R2 file proxy - serve files from R2 when configured
+	app.get('/file/:filename', async (req, res, next) => {
+		try {
+			const secrets = require(__dirname+'/configs/secrets.js');
+			if (!secrets.r2 || !secrets.r2.publicUrl) {
+				return next(); // R2 not configured, serve from local static
+			}
+			// Redirect to R2 public URL
+			return res.redirect(301, `${secrets.r2.publicUrl}/file/${req.params.filename}`);
+		} catch (e) {
+			return next(); // R2 not configured, serve from local static
+		}
+	});
+
+	app.get('/file/thumb/:filename', async (req, res, next) => {
+		try {
+			const secrets = require(__dirname+'/configs/secrets.js');
+			if (!secrets.r2 || !secrets.r2.publicUrl) {
+				return next(); // R2 not configured, serve from local static
+			}
+			// Redirect to R2 public URL
+			return res.redirect(301, `${secrets.r2.publicUrl}/file/thumb/${req.params.filename}`);
+		} catch (e) {
+			return next(); // R2 not configured, serve from local static
+		}
+	});
+
 	//localisation
 	const { setGlobalLanguage } = require(__dirname+'/lib/middleware/locale/locale.js');
 	app.use(i18n.init);
