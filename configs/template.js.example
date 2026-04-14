@@ -378,7 +378,7 @@ module.exports = {
 	//default board settings when a board is created
 	boardDefaults: {
 		language: 'en-GB',
-		theme: 'indusglow',
+		theme: 'yotsuba-b',
 		codeTheme: 'ir-black',
 		sfw: false, //safe for work board
 		lockMode: 0, //board lock mode
