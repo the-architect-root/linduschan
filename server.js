@@ -95,7 +95,7 @@ const Mongo = require(__dirname+'/db/db.js')
 		app[cacheTemplates === true ? 'enable' : 'disable']('view cache');
 		//default settings
 		app.locals.Permissions = Permissions;
-		app.locals.defaultTheme = 'indusglow';
+		app.locals.defaultTheme = 'yotsuba-b';
 		app.locals.defaultCodeTheme = boardDefaults.codeTheme;
 		app.locals.globalLimits = globalLimits;
 		app.locals.ethereumLinksURL = ethereumLinksURL;
