@@ -190,9 +190,11 @@ const Mongo = require(__dirname+'/db/db.js')
 
 	//listen only if not in Vercel (Vercel uses serverless)
 	if (!process.env.VERCEL && !process.env.NOW_REGION) {
-		server.listen(port, (process.env.JSCHAN_IP || '127.0.0.1'), () => {
+		// Use 0.0.0.0 for Render, otherwise use JSCHAN_IP or default to 127.0.0.1
+		const host = process.env.RENDER ? '0.0.0.0' : (process.env.JSCHAN_IP || '127.0.0.1');
+		server.listen(port, host, () => {
 			new CachePugTemplates({ app, views }).start();
-			debugLogs && console.log(`LISTENING ON :${port}`);
+			debugLogs && console.log(`LISTENING ON ${host}:${port}`);
 			//let PM2 know that this is ready for graceful reloads and to serialise startup
 			if (typeof process.send === 'function') {
 				//make sure we are a child process of PM2 i.e. not in dev
