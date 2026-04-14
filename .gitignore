@@ -5,9 +5,8 @@ backup.sh
 configs/*.json
 configs/*.js
 
-# ignore jschan tmp and static
+# ignore jschan tmp
 tmp/
-static/*
 docker/static/*
 
 # ignore some gulp resources
