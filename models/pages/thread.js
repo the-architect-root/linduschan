@@ -21,9 +21,9 @@ module.exports = async (req, res, next) => {
 	}
 
 	if (req.path.endsWith('.json')) {
-		return res.set('Cache-Control', 'max-age=0').json(json);
+		return res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0').json(json);
 	} else {
-		return res.set('Cache-Control', 'max-age=0').send(html);
+		return res.set('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0').send(html);
 	}
 
 };
