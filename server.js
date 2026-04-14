@@ -123,12 +123,7 @@ const Mongo = require(__dirname+'/db/db.js')
 	const blockedBoardStatic = require(__dirname+'/lib/middleware/blockedboardstatic.js');
 	app.use(blockedBoardStatic);
 
-	// routes
-	app.use(express.static(__dirname+'/static', { redirect: false }));
-	app.use(express.static(__dirname+'/static/html', { redirect: false }));
-	app.use(express.static(__dirname+'/static/json', { redirect: false }));
-
-	// R2 file proxy - serve files from R2 when configured
+	// R2 file proxy - serve files from R2 when configured (must come before express.static)
 	app.get('/file/:filename', async (req, res, next) => {
 		try {
 			const secrets = require(__dirname+'/configs/secrets.js');
@@ -154,6 +149,11 @@ const Mongo = require(__dirname+'/db/db.js')
 			return next(); // R2 not configured, serve from local static
 		}
 	});
+
+	// routes
+	app.use(express.static(__dirname+'/static', { redirect: false }));
+	app.use(express.static(__dirname+'/static/html', { redirect: false }));
+	app.use(express.static(__dirname+'/static/json', { redirect: false }));
 
 	//localisation
 	const { setGlobalLanguage } = require(__dirname+'/lib/middleware/locale/locale.js');
