@@ -14,7 +14,6 @@ docker/static/*
 /gulp/res/css/codethemes
 gulp/res/css/locals.css
 gulp/res/css/custom.css
-gulp/res/icons/*
 
 # no compiledclients js files generated from .pug in gulpfile
 gulp/res/js/locals.js
