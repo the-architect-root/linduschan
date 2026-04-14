@@ -34,6 +34,7 @@ const express  = require('express')
 	, custompageParamConverter = paramConverter({ objectIdParams: ['custompageid'] });
 
 //homepage
+router.get('/', (req, res) => res.redirect('/index.html'));
 router.get('/index.html', home);
 
 //news page
