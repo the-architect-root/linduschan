@@ -420,14 +420,8 @@ class postFormHandler {
 							window.myPostId = json.postId;
 						}
 
-						//get board and postId to add to (you)s
-						if (json.redirect) {
-							const redirectBoard = json.redirect.split('/')[1];
-							const redirectPostId = json.redirect.split('#')[1];
-							if (redirectBoard && redirectPostId) {
-								appendLocalStorageArray('yous', `${redirectBoard}-${redirectPostId}`);
-							}
-						}
+						// Removed: don't add own post to (you)s
+						// (you) should only appear when someone else quotes you, not on your own posts
 
 						//do modal for errors/messages
 						if (json.message || json.messages || json.error || json.errors) {
@@ -451,8 +445,8 @@ class postFormHandler {
 							this.reset();
 						}
 
-						//start 60s cooldown timer
-						this.startCooldown(60000);
+						//start 5s cooldown timer
+						this.startCooldown(5000);
 
 					} else {
 

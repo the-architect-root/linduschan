@@ -2,7 +2,7 @@
 let notificationsEnabled = localStorage.getItem('notifications') == 'true';
 let notificationYousOnly = localStorage.getItem('notification-yous-only') == 'true';
 let yousEnabled = localStorage.getItem('yous-setting') == 'true';
-let savedYous = new Set(JSON.parse(localStorage.getItem('yous')));
+let savedYous = new Set();
 let yousList;
 
 function clearYousList() {
@@ -28,14 +28,13 @@ const toggleQuotes = (quotes, state) => {
 
 const toggleOne = (you, state) => {
 	const [board, postId] = you.split('-');
-	const post = document.querySelector(`[data-board="${board}"][data-post-id="${postId}"]`);
-	if (post) {
-		const postName = post.querySelector('.post-name');
-		if (postName) {
-			postName[state?'setAttribute':'removeAttribute']('data-label', __('You'));
-			postName.classList[state?'add':'remove']('you');
-		}
+	// Apply (you) tag to post name itself
+	const postName = document.querySelector(`#${postId} .post-name`);
+	if (postName) {
+		postName[state?'setAttribute':'removeAttribute']('data-label', __('You'));
+		postName.classList[state?'add':'remove']('you');
 	}
+	// Also apply (you) tag to quotes that reference your post
 	const quotes = document.querySelectorAll(`.quote[href^="/${board}/"][href$="#${postId}"]`);
 	if (quotes) {
 		toggleQuotes(quotes, state);
@@ -99,15 +98,19 @@ const handleNewYous = (e) => {
 	const postYou = `${e.detail.json.board}-${e.detail.postId}`;
 	const isYou = window.myPostId == e.detail.postId;
 	if (isYou) {
-		//save you
-		savedYous.add(postYou);
-		const arrayYous = [...savedYous];
-		yousList.value = arrayYous.toString();
-		setLocalStorage('yous', JSON.stringify(arrayYous));
-	}
-	if (savedYous.has(postYou)) {
-		//toggle forn own post for name field
+		// Add own post to yous so (you) tag appears on your own post
+		if (!savedYous.has(postYou)) {
+			savedYous.add(postYou);
+			const arrayYous = [...savedYous];
+			if (yousList) {
+				yousList.value = arrayYous.toString();
+			}
+			setLocalStorage('yous', JSON.stringify(arrayYous));
+			console.log('Added own post to yous:', postYou);
+		}
+		// Apply (you) tag to your own post
 		toggleOne(postYou, yousEnabled);
+		return;
 	}
 	const quotesYou = e.detail.json.quotes
 		.map(q => `${e.detail.json.board}-${q.postId}`)

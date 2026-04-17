@@ -59,7 +59,7 @@ block content
 					td #{board.pph}
 					td #{board.ppd != null ? board.ppd : '-'}
 					td #{board.ips}
-					td #{board.sequence_value-1}
+					td #{board.sequence_value}
 					if board.lastPostTimestamp
 						td(style=`background-color: ${board.lastPostTimestamp.color}`) #{board.lastPostTimestamp.text}
 					else

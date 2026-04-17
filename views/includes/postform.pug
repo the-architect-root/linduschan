@@ -13,26 +13,11 @@ section.form-wrapper.flex-center
 				span.fw.text-center #{isThread ? __('New Reply') : __('New Thread')}
 				a.mr-0.close(href='#!') [×]
 		if board.settings.forceAnon && !modview
-			if isThread
-				section.row
-					.label #{__('Sage')}
-					label.postform-style.ph-5
-						input(type='checkbox', name='email', value='sage')
 			include ./subjectfield.pug
 		else
 			section.row
 				.label #{__('Name')}
 				input(type='text', name='name', placeholder=board.settings.defaultName maxlength=globalLimits.fieldLength.name)
-			if board.settings.sageOnlyEmail && !modview
-				if isThread
-					section.row
-						.label #{__('Sage')}
-						label.postform-style.ph-5
-							input(type='checkbox', name='email', value='sage')
-			else
-				section.row
-					.label #{__('Email')}
-					input(type='text', name='email', autocomplete='off' maxlength=globalLimits.fieldLength.email)
 			include ./subjectfield.pug
 		section.row
 			.label
@@ -63,7 +48,17 @@ section.form-wrapper.flex-center
 						label.noselect.postform-style.ph-5.ml-1.fh
 							input(type='checkbox', name='spoiler_all', value='true')
 							| Spoiler
-			if board.settings.enableTegaki && board.settings.allowedFileTypes.image === true
+		if board.settings.userPostSpoiler || board.settings.userPostDelete || board.settings.userPostUnlink || modview
+			section.row
+				.label Password
+				input(type='password', name='postpassword', placeholder='Password to delete/spoiler/unlink later' maxlength='50' autocomplete='new-password')
+		if isThread
+			section.row
+				.label
+				label.noselect.postform-style.ph-5.fh
+					input(type='checkbox', name='sage' value='true')
+					| Sage (Don't bump thread)
+		if board.settings.enableTegaki && board.settings.allowedFileTypes.image === true
 				section.row.jsonly
 					.label #{__('Tegaki')} 
 					input.dummy-link.tegaki-button(type='button', value=__('Draw'))
@@ -71,10 +66,6 @@ section.form-wrapper.flex-center
 						label.noselect.postform-style.ph-5.ml-1.fh
 							input(type='checkbox' name='tegakireplay')
 							| #{__('Replayable?')}
-		if board.settings.userPostSpoiler || board.settings.userPostDelete || board.settings.userPostUnlink || modview
-			section.row
-				.label Password
-				input(type='password', name='postpassword', placeholder='Password to delete/spoiler/unlink later' maxlength='50' autocomplete='new-password')
 		if modview || board.settings.customFlags === true
 			- const boardFlags = Object.entries(board.flags)
 			if boardFlags.length > 0
@@ -98,6 +89,6 @@ section.form-wrapper.flex-center
 		input#submitpost(type='submit', value=(isThread ? __('New Reply') : __('New Thread')))
 		div#cooldown-timer.jsonly(style='display:none; margin-top:5px; font-weight:bold; color:#d00;')
 			span #{__('Wait')}: 
-			span#cooldown-seconds 60
+			span#cooldown-seconds 5
 			span #{__('seconds to post again')}
 	a.collapse.no-decoration.post-button(href='#postform') [#{isThread ? __('New Reply') : __('New Thread')}]

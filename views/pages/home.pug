@@ -2,7 +2,7 @@ extends ../layout.pug
 include ../mixins/boardtable.pug
 
 block head
-	title #{meta.siteName}
+	title Induschan
 
 block content
 	.table-container.flex-center.mt-2.text-center
@@ -15,9 +15,9 @@ block content
 				td
 					| <strong>Induschan</strong> is an India-based imageboard for indians to share their thoughts and discuss their interests and lifestyle. Feel free to share your thoughts with fellow brothers, but remember to read the <a href="/rules.html">Rules</a> and the <a href="/faq.html">FAQ</a> before posting.
 	.table-container.flex-center.mv-10.text-center
-		img(src='/file/surf.png' alt='Surf the Kaliyuga' style='max-width: 200%; height: auto;')
+		img(src='/file/king.jpg' alt='King' style='max-width: 100%; height: auto;')
 	if recentPosts && recentPosts.length > 0
-		.table-container.flex-center.mv-10
+		.table-container.flex-center.mv-10.latest-posts
 			table(style='max-width:600px')
 				tr
 					th(colspan=3) Latest Posts
@@ -25,16 +25,25 @@ block content
 					tr
 						td
 							a(href=`/${post.board}/thread/${post.thread ? post.thread : post.postId}.html#${post.postId}`)
-								if post.subject
+								if post.nomarkup
+									| #{post.nomarkup.substring(0,50)}#{post.nomarkup.length > 50 ? '...' : ''}
+								else if post.message
+									| #{post.message.substring(0,50)}#{post.message.length > 50 ? '...' : ''}
+								else if post.subject
 									| #{post.subject.substring(0,50)}#{post.subject.length > 50 ? '...' : ''}
-								else if post.message && post.message.raw
-									| #{post.message.raw.substring(0,50)}#{post.message.raw.length > 50 ? '...' : ''}
 								else
 									| /${post.board}/#{post.postId}
 						td #{post.board}
 						td
-							- const postedDate = new Date(post.date);
+							- const postedDate = new Date(post.bumped || post.date);
 							time.right.reltime(datetime=postedDate.toISOString()) #{postedDate.toLocaleString(pageLanguage, {hourCycle:'h23'})}
+	else
+		.table-container.flex-center.mv-10.latest-posts
+			table(style='max-width:600px')
+				tr
+					th(colspan=3) Latest Posts
+				tr
+					td(colspan=3) -
 	.table-container.flex-center.mv-10.text-center
 		table(style='max-width:600px')
 			tr

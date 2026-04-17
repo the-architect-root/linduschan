@@ -34,3 +34,16 @@ junit.xml
 .vercel
 .env
 .env*.local
+
+# user-generated files and data
+backups/
+data/
+static/
+logs/
+*.log
+
+# custom scripts
+init_roles.js
+reset_admin_password.js
+migrate-files-to-board-folders.js
+scripts/

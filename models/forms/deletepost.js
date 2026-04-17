@@ -2,7 +2,7 @@
 
 const uploadDirectory = require(__dirname+'/../../lib/file/uploaddirectory.js')
 	, { remove } = require('fs-extra')
-	, { Posts, Files } = require(__dirname+'/../../db/')
+	, { Posts, Files, Boards } = require(__dirname+'/../../db/')
 	, Socketio = require(__dirname+'/../../lib/misc/socketio.js')
 	, config = require(__dirname+'/../../lib/misc/config.js')
 	, deleteQuotes = require(__dirname+'/../../lib/post/deletequotes.js')
@@ -108,6 +108,24 @@ module.exports = async (posts, board, locals, all=false) => {
 				}
 			}
 		}
+	}
+
+	//decrement board sequence_value to keep statistics accurate
+	const boardPostCounts = {};
+	for (let i = 0; i < allPosts.length; i++) {
+		const post = allPosts[i];
+		if (!boardPostCounts[post.board]) {
+			boardPostCounts[post.board] = 0;
+		}
+		boardPostCounts[post.board]++;
+	}
+	for (const board in boardPostCounts) {
+		await Boards.db.updateOne(
+			{ '_id': board },
+			{ '$inc': { 'sequence_value': -boardPostCounts[board] } }
+		);
+		//recalculate lastPostTimestamp from actual posts
+		await Boards.recalculateLastPostTimestamp(board);
 	}
 
 	//deleting before remarkup so quotes are accurate

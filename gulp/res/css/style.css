@@ -186,7 +186,7 @@ pre {
 	margin-right: 5px;
 }
 .mv-10 {
-	margin: 10px 0;
+	margin: 5px 0;
 }
 .mt-10 {
 	margin-top: 10px;
@@ -1126,6 +1126,7 @@ input:invalid, textarea:invalid {
 .post-subject {
 	color: var(--subject-color)!important;
 	font-weight: bold;
+	margin-right: 10px;
 }
 
 .post-capcode {
@@ -1513,8 +1514,27 @@ table.accounttable td:nth-child(1) {
 	display: inline;
 }
 
-table, .boardtable {
+table,/* Video player styles */
+video {
 	max-width: 100%;
+}
+
+/* Hide browser's center play button overlay on videos */
+video::-webkit-media-controls-overlay-play-button {
+    display: none !important;
+}
+
+video::-webkit-media-controls-start-playback-button {
+    display: none !important;
+}
+
+/* Force hide center play button with more specific selectors */
+video[controls]::-webkit-media-controls-overlay-play-button {
+    display: none !important;
+}
+
+video[controls]::-webkit-media-controls-start-playback-button {
+    display: none !important;
 }
 
 .text-center {
@@ -1760,6 +1780,37 @@ row.wrap.sb .col {
 		display: none;
 	}
 
+	/* Boardlist page mobile adjustments */
+	.boardlist .form-post {
+		padding: 5px;
+		margin: 5px 0;
+		font-size: 12px;
+	}
+	.boardlist .form-post .row {
+		margin-bottom: 3px;
+	}
+	.boardlist .form-post .label {
+		font-size: 11px;
+		margin-right: 5px;
+	}
+	.boardlist .form-post input[type="text"],
+	.boardlist .form-post select {
+		font-size: 12px;
+		padding: 3px;
+	}
+	.boardlist .form-post input[type="submit"] {
+		font-size: 12px;
+		padding: 5px 10px;
+		margin-top: 5px;
+	}
+	.boardlist table.boardtable {
+		font-size: 14px;
+	}
+	.boardlist table.boardtable td,
+	.boardlist table.boardtable th {
+		padding: 8px 4px;
+	}
+
 	.board-banner {
 		object-fit: contain;
 		height: unset;
@@ -1789,6 +1840,22 @@ row.wrap.sb .col {
 		max-width: 128px;
 		max-height: 128px;
 		object-fit: cover;
+	}
+
+	.post-container {
+		min-width: unset;
+		width: 100%;
+	}
+
+	.post-files {
+		float: none;
+		width: 100%;
+		margin: 0;
+		justify-content: center;
+	}
+
+	.post-file {
+		padding: 0.5em;
 	}
 
 	.post-info{
@@ -1851,9 +1918,11 @@ row.wrap.sb .col {
 	}
 
 	.post-container {
-		box-shadow: none;
-		width: 100%;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+		width: 95%;
 		min-width: unset;
+		margin: 10px auto;
+		border-radius: 8px;
 	}
 
 	.catalog-tile {

@@ -146,7 +146,7 @@ router.get('/unblockrequests', useSession, sessionRefresh, calcPerms, isLoggedIn
 //removes captcha cookie, for refreshing for noscript users
 router.post('/newcaptcha', newCaptchaForm);
 //solve captcha for block bypass
-router.post('/blockbypass', geoIp, processIp, useSession, sessionRefresh, calcPerms, setQueryLanguage, verifyCaptcha, blockBypassForm);
+router.post('/blockbypass', geoIp, processIp, useSession, sessionRefresh, calcPerms, setQueryLanguage, csrf, verifyCaptcha, blockBypassForm);
 
 module.exports = router;
 

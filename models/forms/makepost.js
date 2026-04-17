@@ -277,14 +277,43 @@ module.exports = async (req, res) => {
 
 			//type and subtype
 			let [type, subtype] = processedFile.mimetype.split('/');
-			//check if already exists
-			const existsFull = await pathExists(`${uploadDirectory}/file/${processedFile.filename}`);
+			//check if already exists at correct location based on file type (with board-specific path)
+			let subfolder = 'file';
+			if (file.mimetype && file.mimetype.startsWith('image/')) {
+				subfolder = 'uploads/images';
+			} else if (file.mimetype && (file.mimetype.startsWith('video/') || file.mimetype.startsWith('audio/'))) {
+				subfolder = 'uploads/videos';
+			}
+			// Check new board-specific path first, then fallback to old path
+			let fileCheckPath = `${uploadDirectory}/${req.params.board}/${subfolder}/${processedFile.filename}`;
+			const existsFullNew = await pathExists(fileCheckPath);
+			let existsFull = existsFullNew;
+			let actualFileLocation = fileCheckPath;
+			if (!existsFullNew) {
+				// Fallback to old path for existing files
+				let oldSubfolder = 'file';
+				if (file.mimetype && file.mimetype.startsWith('image/')) {
+					oldSubfolder = 'uploads/images';
+				} else if (file.mimetype && (file.mimetype.startsWith('video/') || file.mimetype.startsWith('audio/'))) {
+					oldSubfolder = 'uploads/videos';
+				}
+				const oldPath = `${uploadDirectory}/${oldSubfolder}/${processedFile.filename}`;
+				existsFull = await pathExists(oldPath);
+				if (existsFull) {
+					actualFileLocation = oldPath;
+				}
+			}
+			console.log('saveFull: existsFull =', existsFull, 'fileCheckPath =', fileCheckPath, 'actualFileLocation =', actualFileLocation);
 			processedFile.sizeString = formatSize(processedFile.size);
+			processedFile.actualFileLocation = actualFileLocation;
 			const saveFull = async () => {
 				await Files.increment(processedFile);
 				req.files.file[i].inced = true;
 				if (!existsFull) {
-					await moveUpload(file, processedFile.filename, 'file');
+					console.log('saveFull: calling moveUpload for', processedFile.filename);
+					await moveUpload(file, processedFile.filename, 'file', req.params.board);
+				} else {
+					console.log('saveFull: file already exists, skipping moveUpload');
 				}
 			};
 			if (mimeTypes.getOther().has(processedFile.mimetype)) {
@@ -293,7 +322,10 @@ module.exports = async (req, res) => {
 				processedFile.attachment = true;
 				await saveFull();
 			} else {
-				const existsThumb = await pathExists(`${uploadDirectory}/file/thumb/${processedFile.hash}${processedFile.thumbextension}`);
+				// Check thumbnail existence with board-specific path and fallback
+				const newThumbPath = `${uploadDirectory}/${req.params.board}/file/thumb/${processedFile.hash}${processedFile.thumbextension}`;
+				const oldThumbPath = `${uploadDirectory}/file/thumb/${processedFile.hash}${processedFile.thumbextension}`;
+				const existsThumb = await pathExists(newThumbPath) || await pathExists(oldThumbPath);
 				try {
 					switch (type) {
 						case 'image': {
@@ -321,10 +353,10 @@ module.exports = async (req, res) => {
 							await saveFull();
 							// Strip EXIF/metadata from original image
 							if (!existsFull) {
-								await stripMetadata(processedFile).catch(err => console.warn('Failed to strip metadata:', err));
+								await stripMetadata(processedFile, req.params.board).catch(err => console.warn('Failed to strip metadata:', err));
 							}
 							if (!existsThumb) {
-								await imageThumbnail(processedFile);
+								await imageThumbnail(processedFile, req.params.board, actualFileLocation);
 							}
 							processedFile = fixGifs(processedFile);
 							break;
@@ -355,18 +387,21 @@ module.exports = async (req, res) => {
 									const numFrames = videoStreams[0].nb_frames;
 									const timestamp = ((numFrames === 'N/A' && subtype !== 'webm') || numFrames <= 1) ? 0 : processedFile.duration * videoThumbPercentage / 100;
 									try {
-										await videoThumbnail(processedFile, processedFile.geometry, timestamp);
+										await videoThumbnail(processedFile, processedFile.geometry, timestamp, req.params.board);
 									} catch (err) {
 										//No keyframe after timestamp probably. ignore, we'll retry
 										console.warn(err); //printing log because this error can actually be useful and we dont wanna mask it
 									}
 									let videoThumbStat = null;
 									try {
-										videoThumbStat = await fsStat(`${uploadDirectory}/file/thumb/${processedFile.hash}${processedFile.thumbextension}`);
+										videoThumbStat = await fsStat(`${uploadDirectory}/${req.params.board}/file/thumb/${processedFile.hash}${processedFile.thumbextension}`);
+										if (!videoThumbStat || videoThumbStat.code === 'ENOENT') {
+											videoThumbStat = await fsStat(`${uploadDirectory}/file/thumb/${processedFile.hash}${processedFile.thumbextension}`);
+										}
 									} catch (err) { /*ENOENT probably, ignore*/ }
 									if (!videoThumbStat || videoThumbStat.code === 'ENOENT' || videoThumbStat.size === 0) {
 										//create thumb again at 0 timestamp and lets hope it exists this time
-										await videoThumbnail(processedFile, processedFile.geometry, 0);
+										await videoThumbnail(processedFile, processedFile.geometry, 0, req.params.board);
 									}
 								}
 							} else {
@@ -378,7 +413,7 @@ module.exports = async (req, res) => {
 								processedFile.geometry = { thumbwidth: thumbSize, thumbheight: thumbSize };
 								await saveFull();
 								if (processedFile.hasThumb && !existsThumb) {
-									await audioThumbnail(processedFile);
+									await audioThumbnail(processedFile, req.params.board);
 								}
 							}
 							break;
@@ -454,9 +489,19 @@ module.exports = async (req, res) => {
 	const spoiler = (!isStaffOrGlobal || userPostSpoiler) && req.body.spoiler_all ? true : false;
 
 	//forceanon and sageonlyemail only allow sage email
-	let email = (isStaffOrGlobal || (!forceAnon && !sageOnlyEmail) || req.body.email === 'sage') ? req.body.email : null;
+	//handle sage via checkbox - don't set email to 'sage' to avoid mailto link
+	let email = req.body.email;
+	if (req.body.sage === 'true') {
+		//sage is handled separately, don't set email field
+		email = null;
+	} else {
+		email = (isStaffOrGlobal || (!forceAnon && !sageOnlyEmail) || email === 'sage') ? email : null;
+	}
 	//disablereplysubject
 	let subject = (!isStaffOrGlobal && req.body.thread && disableReplySubject) ? null : req.body.subject;
+
+	//sage checkbox value for database
+	const sage = req.body.sage === 'true' ? 'true' : null;
 
 	//get name, trip and cap
 	const { name, tripcode, capcode } = await nameHandler(
@@ -497,6 +542,7 @@ module.exports = async (req, res) => {
 		'thread': req.body.thread || null,
 		password,
 		email,
+		sage,
 		spoiler,
 		signature,
 		address,
@@ -696,7 +742,7 @@ module.exports = async (req, res) => {
 		});
 	} else if (data.thread) {
 		//refersh pages
-		if (data.email === 'sage' || thread.bumplocked) {
+		if (data.email === 'sage' || data.sage === 'true' || thread.bumplocked) {
 			//refresh the page that the thread is on
 			buildQueue.push({
 				'task': 'buildBoard',

@@ -38,10 +38,7 @@ mixin post(post, truncate, manage=false, globalmanage=false, ban=false, overboar
 					if post.subject
 						span.post-subject #{post.subject}
 						| 
-					if post.email
-						a.post-name(href=`mailto:${post.email}`) #{post.name}
-					else 
-						span.post-name #{post.name}
+					span.post-name #{post.name}
 					| 
 				if post.country && post.country.code
 					include ../includes/postflag.pug
@@ -92,18 +89,27 @@ mixin post(post, truncate, manage=false, globalmanage=false, ban=false, overboar
 							- continue; //Skip showing tegaki replay alone if is includes the image
 						.post-file
 							- const type = file.mimetype.split('/')[0]
-							.post-file-src(data-type=type data-attachment=(file.attachment ? "true" : "false"))
-								a(target=(type === 'video' ? '' : '_blank') href=`/file/${file.filename}`)
-									if post.spoiler || file.spoiler
-										div.spoilerimg.file-thumb
-									else if file.hasThumb
-										img.file-thumb(src=`/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy')
-									else if file.attachment
-										div.attachmentimg.file-thumb(data-mimetype=file.mimetype)
-									else if type === 'audio'
-										div.audioimg.file-thumb
-									else
-										img.file-thumb(src=`/file/${file.filename}` height=file.geometry.height width=file.geometry.width loading='lazy')
+							.post-file-src(data-type=(type === 'video' ? 'custom-video' : type) data-attachment=(file.attachment ? "true" : "false"))
+								if type === 'video'
+									img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy' onclick=`this.style.display='none';this.nextElementSibling.style.display='block';`)
+									.video-wrapper(style='display:none;position:relative;width:100%;')
+										video(style='width:100%;height:auto;min-width:320px;min-height:180px;' controls preload='metadata')
+											source(src=`/${post.board}/file/${file.filename}` type='video/webm')
+										button.close-video(style='position:absolute;top:5px;right:5px;background:red;color:white;border:none;padding:5px 10px;cursor:pointer;z-index:1000;font-weight:bold;' onclick='this.parentElement.style.display="none";this.parentElement.previousElementSibling.style.display="block";this.parentElement.querySelector("video").pause();') ×
+								else if type === 'audio'
+									img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy' onclick=`this.style.display='none';this.nextElementSibling.style.display='block';this.nextElementSibling.play();`)
+									audio(style='display:none;' controls preload='none' onclick='this.style.display="none";this.previousElementSibling.style.display="block";')
+										source(src=`/${post.board}/file/${file.filename}` type='audio/webm')
+								else
+									a(target='_blank' href=`/${post.board}/file/${file.filename}`)
+										if post.spoiler || file.spoiler
+											div.spoilerimg.file-thumb
+										else if file.hasThumb
+											img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy')
+										else if file.attachment
+											div.attachmentimg.file-thumb(data-mimetype=file.mimetype)
+										else
+											img.file-thumb(src=`/${post.board}/file/${file.filename}` height=file.geometry.height width=file.geometry.width loading='lazy')
 			- if (post.message && modview) { post.message = post.message.replace(new RegExp(`<a class="quote" href="/${post.board}/`, 'g'), `<a class="quote" href="/${post.board}/manage/`); } //its either this, a subdomain, or nothing.
 			- let truncatedMessage = post.message;
 			if post.message

@@ -61,6 +61,7 @@ router.get('/settings.json', globalSettings); //public global settings
 router.get('/randombanner', randombanner); //random banner
 
 //board manage pages
+router.get('/:board/manage.html', (req, res) => res.redirect(`/${req.params.board}/manage/index.html`));
 router.get('/:board/manage/catalog.html', useSession, sessionRefresh, isLoggedIn, Boards.exists, setBoardLanguage, calcPerms,
 	hasPerms.one(Permissions.MANAGE_BOARD_GENERAL), csrf, manageCatalog);
 router.get('/:board/manage/:page(1[0-9]{1,}|[2-9][0-9]{0,}|index).html', useSession, sessionRefresh, isLoggedIn, Boards.exists, setBoardLanguage, calcPerms,
@@ -129,8 +130,8 @@ router.get('/globalmanage/editrole/:roleid([a-f0-9]{24}).html', useSession, sess
 //captcha
 router.get('/captcha', geoIp, processIp, captcha); //get captcha image and cookie
 router.get('/captcha.html', captchaPage); //iframed for noscript users
-router.get('/bypass.html', blockBypass); //block bypass page
-router.get('/bypass_minimal.html', setMinimal, setQueryLanguage, blockBypass); //block bypass page
+router.get('/bypass.html', useSession, csrf, blockBypass); //block bypass page
+router.get('/bypass_minimal.html', setMinimal, setQueryLanguage, useSession, csrf, blockBypass); //block bypass page
 
 //accounts
 router.get('/account.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, account);
@@ -144,5 +145,8 @@ router.get('/register.html', register);
 router.get('/changepassword.html', changePassword);
 router.get('/create.html', useSession, sessionRefresh, isLoggedIn, create); //create new board
 router.get('/csrf.json', useSession, sessionRefresh, isLoggedIn, csrf, csrfPage); //just the token, for 3rd party stuff posting
+
+//board default redirect - must come after specific routes
+router.get('/:board/', Boards.exists, (req, res) => res.redirect(`/${req.params.board}/catalog.html`)); //redirect to catalog by default
 
 module.exports = router;

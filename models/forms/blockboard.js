@@ -56,6 +56,7 @@ module.exports = {
 			}
 			
 			// Set cookie for all users (logged-in and non-logged-in)
+			// Cookie is used for non-logged-in users, logged-in users use database
 			const blockedBoardsCookie = req.cookies.blockedBoards;
 			let blockedBoards = [];
 			if (blockedBoardsCookie) {

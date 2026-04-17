@@ -53,11 +53,21 @@ window.addEventListener('DOMContentLoaded', () => {
 				thumb.style.display = '';
 				expanded.style.display = 'none';
 				filename.style.maxWidth = '';
+				// Hide close button when closing
+				const closeButton = src.querySelector('.noselect');
+				if (closeButton) {
+					closeButton.style.display = 'none';
+				}
 			} else { //expanding
 				thumb.style.display = 'none';
 				expanded.style.display = '';
 				if (expanded.offsetWidth >= filename.offsetWidth) {
 					filename.style.maxWidth = expanded.offsetWidth+'px';
+				}
+				// Show close button when expanding
+				const closeButton = src.querySelector('.noselect');
+				if (closeButton) {
+					closeButton.style.display = 'block';
 				}
 			}
 			//handle css thing for play icon on vid/audio
@@ -108,48 +118,15 @@ window.addEventListener('DOMContentLoaded', () => {
 						}
 						thumbElement.style.opacity = '0.5';
 						thumbElement.style.cursor = 'wait';
-						if (localStorage.getItem('imageloadingbars') == 'true'
-							&& window.URL.createObjectURL) {
-							const request = new XMLHttpRequest();
-							request.onprogress = (e) => {
-								const progress = Math.floor((e.loaded/e.total)*100);
-								const progressWidth = Math.floor((e.loaded/e.total)*thumbElement.offsetWidth);
-								if (progress >= 100) {
-									pfs.removeAttribute('data-loading');
-								} else {
-									pfs.setAttribute('data-loading', progress);
-									pfs.style = `--data-loading: ${progressWidth}px`;
-								}
-							};
-							expandedElement = document.createElement('img');
-							source = expandedElement;
-							const loaded = function() {
-								pfs.removeAttribute('data-loading');
-								pfs.removeAttribute('style');
-								const blob = this.response;
-								source.onload = function() {
-									thumbElement.style.opacity = '';
-									thumbElement.style.cursor = '';
-									fileAnchor.appendChild(expandedElement);
-									toggle(thumbElement, expandedElement, fileName, pfs);
-								};
-								source.src = window.URL.createObjectURL(blob);
-							};
-							request.onload = loaded;
-							request.responseType = 'blob';
-							request.open('GET', fileHref, true);
-							request.send(null);
-						} else {
-							expandedElement = document.createElement('img');
-							source = expandedElement;
-							source.onload = function() {
-								thumbElement.style.opacity = '';
-								thumbElement.style.cursor = '';
-								fileAnchor.appendChild(expandedElement);
-								toggle(thumbElement, expandedElement, fileName, pfs);
-							};
-							source.src = fileHref;
-						}
+						expandedElement = document.createElement('img');
+						source = expandedElement;
+						source.onload = function() {
+							thumbElement.style.opacity = '';
+							thumbElement.style.cursor = '';
+							fileAnchor.appendChild(expandedElement);
+							toggle(thumbElement, expandedElement, fileName, pfs);
+						};
+						source.src = fileHref;
 						break;
 					case 'video':
 					case 'audio': {
@@ -161,7 +138,7 @@ window.addEventListener('DOMContentLoaded', () => {
 						const closeBracket = document.createTextNode(']');
 						closeSpan.classList.add('noselect', 'bold');
 						closeSpan.style.marginBottom = '3px';
-						closeSpan.style.display = 'block';
+						closeSpan.style.display = 'none'; // Hide by default
 						closeSpan.style.color = 'var(--font-color)';
 						closeLink.classList.add('dummy-link');
 						closeLink.textContent = 'Close';
@@ -174,9 +151,8 @@ window.addEventListener('DOMContentLoaded', () => {
 							toggle(thumbElement, expandedElement, fileName, pfs);
 						}, true);
 						expandedElement.controls = 'true';
-						source = document.createElement('source');
-						expandedElement.appendChild(source);
 						expandedElement.setAttribute('playsinline', '');
+						expandedElement.src = fileHref; // Use direct src instead of source element
 						if (type === 'audio' && thumbElement.nodeName === 'IMG') {
 							expandedElement.style.backgroundImage =
 								`url("${encodeURI(thumbElement.src)}")`;
@@ -192,7 +168,8 @@ window.addEventListener('DOMContentLoaded', () => {
 						pfs.appendChild(expandedElement);
 						fileAnchor.appendChild(closeSpan);
 						toggle(thumbElement, expandedElement, fileName, pfs);
-						source.src = fileHref;
+						// Play video after expansion
+						expandedElement.play().catch(e => console.log('Video play error:', e));
 						return;
 					}
 				}

@@ -100,7 +100,7 @@ module.exports = {
 			'thread': null,
 		};
 		// Exclude specific boards from overboard and homepage
-		const excludedBoards = ['gama', 'v', 'samaj'];
+		const excludedBoards = ['gama', 'vent', 'samaj'];
 		if (board) {
 			if (Array.isArray(board)) {
 				//array for overboard - filter out excluded boards
@@ -126,11 +126,14 @@ module.exports = {
 				'bumped': -1
 			};
 		}
+		// Ensure page is a valid positive number
+		const validPage = Math.max(1, Number(page) || 1);
+		const skip = 10*(validPage-1);
 		const threads = await db.find(threadsQuery, {
 			projection
 		})
 			.sort(threadsSort)
-			.skip(10*(page-1))
+			.skip(skip)
 			.limit(limit)
 			.toArray();
 
@@ -143,33 +146,69 @@ module.exports = {
 				'board': thread.board
 			},{
 				projection
-			}).sort({
-				'postId': -1
-			}).limit(previewRepliesLimit).toArray();
-
-			//reverse order for board page
+			})
+				.sort({postId: -1})
+				.limit(previewRepliesLimit)
+				.toArray();
 			thread.replies = replies.reverse();
-
-			//if enough replies, show omitted count
-			if (thread.replyposts > previewRepliesLimit) {
-				//dont show all backlinks on OP for previews on index page
-				thread.previewbacklinks = [];
-				if (previewRepliesLimit > 0) {
-					const firstPreviewId = thread.replies[0].postId;
-					const latestPreviewBacklink = thread.backlinks.find(bl => { return bl.postId >= firstPreviewId; });
-					if (latestPreviewBacklink != null) {
-						const latestPreviewIndex = thread.backlinks.map(bl => bl.postId).indexOf(latestPreviewBacklink.postId);
-						thread.previewbacklinks = thread.backlinks.slice(latestPreviewIndex);
-					}
-				}
-				//count omitted image and posts
-				const numPreviewFiles = replies.reduce((acc, post) => { return acc + post.files.length; }, 0);
-				thread.omittedfiles = thread.replyfiles - numPreviewFiles;
-				thread.omittedposts = thread.replyposts - replies.length;
-			}
 		}));
-		return threads;
 
+		return threads;
+	},
+
+	getRecentWithReplies: async (limit=10, getSensitive=false) => {
+		// get all recent posts (both thread OPs and replies)
+		const projection = {
+			'salt': 0,
+			'password': 0,
+			'reports': 0,
+			'globalreports': 0,
+		};
+		if (!getSensitive) {
+			projection['ip'] = 0;
+		}
+		const postsQuery = {
+			// no filter - include both thread OPs and replies
+		};
+		// Exclude specific boards from homepage
+		const excludedBoards = ['gama', 'vent', 'samaj'];
+		postsQuery['board'] = {
+			'$nin': excludedBoards
+		};
+		const postsSort = {
+			'date': -1,
+		};
+		const posts = await db.find(postsQuery, {
+			projection
+		})
+			.sort(postsSort)
+			.limit(limit)
+			.toArray();
+
+		return posts;
+	},
+
+	count: (filter, showSensitive=false, webringSites=false) => {
+		const addedFilter = {};
+		if (webringSites) {
+			addedFilter['siteName'] = {
+				'$in': webringSites,
+			};
+		}
+		if (!showSensitive) {
+			addedFilter['settings.unlistedLocal'] = { $ne: true };
+			if (!webringSites) {
+				addedFilter['webring'] = false;
+			}
+		} else {
+			if (filter.filter_sfw) {
+				addedFilter['settings.sfw'] = true;
+			}
+		}
+		return db.countDocuments({
+			...filter,
+			...addedFilter
+		});
 	},
 
 	resetThreadAggregates: (ors) => {
@@ -460,10 +499,11 @@ module.exports = {
 
 	insertOne: async (board, data, thread, anonymizer) => {
 		const sageEmail = data.email === 'sage';
+		const sageCheckbox = data.sage === 'true';
 		const bumpLocked = thread && thread.bumplocked === 1;
 		const bumpLimited = thread && thread.replyposts >= board.settings.bumpLimit;
 		const cyclic = thread && thread.cyclic === 1;
-		const saged = sageEmail || bumpLocked || (bumpLimited && !cyclic);
+		const saged = sageEmail || sageCheckbox || bumpLocked || (bumpLimited && !cyclic);
 		if (data.thread !== null) {
 			const filter = {
 				'postId': data.thread,

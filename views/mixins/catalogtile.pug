@@ -21,6 +21,8 @@ mixin catalogtile(post, index, overboard=false)
 		- const postURL = `/${post.board}/${modview ? 'manage/' : ''}thread/${post.postId}.html`
 		.post-info
 			a.no-decoration.post-subject(href=postURL) #{post.subject || `#${post.postId}`}
+			.catalog-stats
+				span R:#{post.replyposts} / I:#{post.replyfiles}
 		if post.files.length > 0
 			.col
 				.row.ct-r1

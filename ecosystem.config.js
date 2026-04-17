@@ -23,7 +23,7 @@ module.exports = {
 	}, {
 		name: 'chan',
 		script: 'server.js',
-		cwd: '/home/alt/Desktop/jschan',
+		cwd: '/home/alt/jschan',
 		instances: 1,
 		autorestart: true,
 		watch: false,
@@ -40,7 +40,7 @@ module.exports = {
 	}, {
 		name: 'schedules',
 		script: 'schedules/index.js',
-		cwd: '/home/alt/Desktop/jschan',
+		cwd: '/home/alt/jschan',
 		instances: 1,
 		autorestart: true,
 		watch: false,

@@ -1,5 +1,5 @@
-/* globals __ __n LANG SERVER_TIMEZONE setLocalStorage */
-let relativeTime = localStorage.getItem('relative') == 'true';
+/* globals __ __n LANG SERVER_TIMEZONE setLocalStorage settings */
+let relativeTime = false;
 let hour24 = localStorage.getItem('24hour') == 'true';
 let localTime = localStorage.getItem('localtime') == 'true';
 

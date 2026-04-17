@@ -5,6 +5,14 @@ let socket;
 let socketPingInterval;
 let forceUpdate;
 let newPost;
+let fetchNewPosts;
+let updateLive;
+let updateButton;
+let livetext;
+let livecolor;
+let lastPostIds;
+let liveTimeout;
+let retrySocketTimeout;
 
 window.addEventListener('settingsReady', function() { //after domcontentloaded
 

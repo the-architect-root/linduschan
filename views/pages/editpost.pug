@@ -20,7 +20,6 @@ block content
 							if !post.thread
 								include ../includes/posticons.pug
 							input.edit.post-subject(value=post.subject placeholder=__('Subject') type='text' name='subject' maxlength=globalLimits.fieldLength.subject)
-							input.edit.post-name(value=post.email type='text' name='email' placeholder=__('Email') maxlength=globalLimits.fieldLength.email)
 							input.edit.post-name(type='text' name='name' placeholder=__('Name') maxlength=globalLimits.fieldLength.name value=post.name+(post.capcode || ''))
 						if post.country && post.country.code
 							include ../includes/postflag.pug 

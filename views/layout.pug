@@ -3,6 +3,7 @@ html
 	head
 		include includes/head.pug
 		block head
+			title #{meta.siteName}
 	body#top
 		include includes/navbar.pug
 		main(class=(minimal?'minimal':''))

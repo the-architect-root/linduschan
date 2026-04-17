@@ -70,6 +70,47 @@ const Mongo = require(__dirname+'/db/db.js')
 	// parse cookies
 	app.use(cookieParser(cookieSecret));
 
+	// Security headers
+	app.use((req, res, next) => {
+		// Content Security Policy - allow framing for bypass pages
+		const isBypassPage = req.path.startsWith('/bypass') || req.path.startsWith('/captcha.html');
+		const frameAncestors = isBypassPage ? "'self'" : "'none'";
+		res.setHeader('Content-Security-Policy', 
+			"default-src 'self'; " +
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+			"style-src 'self' 'unsafe-inline'; " +
+			"img-src 'self' data: blob: https:; " +
+			"font-src 'self' data:; " +
+			"connect-src 'self' ws: wss:; " +
+			"frame-src 'self' https://www.youtube.com https://youtube.com; " +
+			`frame-ancestors ${frameAncestors}; ` +
+			"form-action 'self';"
+		);
+		// X-Frame-Options - allow framing for bypass pages
+		const frameOptions = isBypassPage ? 'SAMEORIGIN' : 'DENY';
+		res.setHeader('X-Frame-Options', frameOptions);
+		// X-Content-Type-Options
+		res.setHeader('X-Content-Type-Options', 'nosniff');
+		// Referrer-Policy
+		res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+		// Permissions-Policy
+		res.setHeader('Permissions-Policy', 
+			'geolocation=(), ' +
+			'microphone=(), ' +
+			'camera=(), ' +
+			'payment=(), ' +
+			'usb=(), ' +
+			'magnetometer=(), ' +
+			'gyroscope=(), ' +
+			'accelerometer=()'
+		);
+		// Strict-Transport-Security (only in production and HTTPS)
+		if (production && req.secure) {
+			res.setHeader('Strict-Transport-Security', 'max-age=15552000'); // 6 months
+		}
+		next();
+	});
+
 	// session store
 	const sessionMiddleware = require(__dirname+'/lib/middleware/permission/usesession.js');
 	app.use(sessionMiddleware);
@@ -95,7 +136,7 @@ const Mongo = require(__dirname+'/db/db.js')
 		app[cacheTemplates === true ? 'enable' : 'disable']('view cache');
 		//default settings
 		app.locals.Permissions = Permissions;
-		app.locals.defaultTheme = 'yotsuba-b';
+		app.locals.defaultTheme = 'clear';
 		app.locals.defaultCodeTheme = boardDefaults.codeTheme;
 		app.locals.globalLimits = globalLimits;
 		app.locals.ethereumLinksURL = ethereumLinksURL;
@@ -124,36 +165,180 @@ const Mongo = require(__dirname+'/db/db.js')
 	app.use(blockedBoardStatic);
 
 	// R2 file proxy - serve files from R2 when configured (must come before express.static)
+	// R2 redirect disabled - serve all files from local storage
+	// app.get('/file/:filename', async (req, res, next) => {
+	// 	try {
+	// 		const secrets = require(__dirname+'/configs/secrets.js');
+	// 		if (!secrets.r2 || !secrets.r2.publicUrl) {
+	// 			return next(); // R2 not configured, serve from local static
+	// 		}
+	// 		// Redirect to R2 public URL
+	// 		return res.redirect(301, `${secrets.r2.publicUrl}/file/${req.params.filename}`);
+	// 	} catch (e) {
+	// 		return next(); // R2 not configured, serve from local static
+	// 	}
+	// });
+
+	// R2 redirect disabled - serve all thumbnails from local storage
+	// app.get('/file/thumb/:filename', async (req, res, next) => {
+	// 	try {
+	// 		const secrets = require(__dirname+'/configs/secrets.js');
+	// 		if (!secrets.r2 || !secrets.r2.publicUrl) {
+	// 			return next(); // R2 not configured, serve from local static
+	// 		}
+	// 		// Redirect to R2 public URL
+	// 		return res.redirect(301, `${secrets.r2.publicUrl}/file/thumb/${req.params.filename}`);
+	// 	} catch (e) {
+	// 		return next(); // R2 not configured, serve from local static
+	// 	}
+	// });
+
+	// Serve full-size files from new upload folders with board-specific paths
+	app.get('/:board/file/:filename', async (req, res, next) => {
+		const filename = req.params.filename;
+		const board = req.params.board;
+		const path = require('path');
+		const fs = require('fs');
+
+		// Check if file exists in board-specific upload folders
+		const boardImageLocation = path.join(__dirname, `/static/${board}/uploads/images/`, filename);
+		const boardVideoLocation = path.join(__dirname, `/static/${board}/uploads/videos/`, filename);
+		const boardFileLocation = path.join(__dirname, `/static/${board}/file/`, filename);
+		
+		// Check new upload folders (non-board-specific)
+		const imageLocation = path.join(__dirname, '/static/uploads/images/', filename);
+		const videoLocation = path.join(__dirname, '/static/uploads/videos/', filename);
+		const oldLocation = path.join(__dirname, '/static/file/', filename);
+
+		if (fs.existsSync(boardImageLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(boardImageLocation).mtime.getTime().toString());
+			return res.sendFile(boardImageLocation);
+		} else if (fs.existsSync(boardVideoLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(boardVideoLocation).mtime.getTime().toString());
+			return res.sendFile(boardVideoLocation);
+		} else if (fs.existsSync(boardFileLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(boardFileLocation).mtime.getTime().toString());
+			return res.sendFile(boardFileLocation);
+		} else if (fs.existsSync(imageLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(imageLocation).mtime.getTime().toString());
+			return res.sendFile(imageLocation);
+		} else if (fs.existsSync(videoLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(videoLocation).mtime.getTime().toString());
+			return res.sendFile(videoLocation);
+		} else if (fs.existsSync(oldLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(oldLocation).mtime.getTime().toString());
+			return res.sendFile(oldLocation);
+		} else {
+			return next();
+		}
+	});
+	
+	// Keep old route for backward compatibility
 	app.get('/file/:filename', async (req, res, next) => {
-		try {
-			const secrets = require(__dirname+'/configs/secrets.js');
-			if (!secrets.r2 || !secrets.r2.publicUrl) {
-				return next(); // R2 not configured, serve from local static
-			}
-			// Redirect to R2 public URL
-			return res.redirect(301, `${secrets.r2.publicUrl}/file/${req.params.filename}`);
-		} catch (e) {
-			return next(); // R2 not configured, serve from local static
+		const filename = req.params.filename;
+		const path = require('path');
+		const fs = require('fs');
+
+		// Check if file exists in new upload folders
+		const imageLocation = path.join(__dirname, '/static/uploads/images/', filename);
+		const videoLocation = path.join(__dirname, '/static/uploads/videos/', filename);
+		const oldLocation = path.join(__dirname, '/static/file/', filename);
+
+		if (fs.existsSync(imageLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(imageLocation).mtime.getTime().toString());
+			return res.sendFile(imageLocation);
+		} else if (fs.existsSync(videoLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(videoLocation).mtime.getTime().toString());
+			return res.sendFile(videoLocation);
+		} else if (fs.existsSync(oldLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(oldLocation).mtime.getTime().toString());
+			return res.sendFile(oldLocation);
+		} else {
+			return next();
 		}
 	});
 
-	app.get('/file/thumb/:filename', async (req, res, next) => {
-		try {
-			const secrets = require(__dirname+'/configs/secrets.js');
-			if (!secrets.r2 || !secrets.r2.publicUrl) {
-				return next(); // R2 not configured, serve from local static
-			}
-			// Redirect to R2 public URL
-			return res.redirect(301, `${secrets.r2.publicUrl}/file/thumb/${req.params.filename}`);
-		} catch (e) {
-			return next(); // R2 not configured, serve from local static
+	// Serve thumbnails from /file/thumb/ with board-specific paths
+	app.get('/:board/file/thumb/:filename', (req, res, next) => {
+		const filename = req.params.filename;
+		const board = req.params.board;
+		const path = require('path');
+		const fs = require('fs');
+
+		// Check board-specific thumb folder
+		const boardThumbLocation = path.join(__dirname, `/static/${board}/file/thumb/`, filename);
+		// Check new upload folders for thumbnails
+		const thumbLocation = path.join(__dirname, '/static/uploads/images/thumb/', filename);
+		const oldThumbLocation = path.join(__dirname, '/static/file/thumb/', filename);
+
+		if (fs.existsSync(boardThumbLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(boardThumbLocation).mtime.getTime().toString());
+			return res.sendFile(boardThumbLocation);
+		} else if (fs.existsSync(thumbLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(thumbLocation).mtime.getTime().toString());
+			return res.sendFile(thumbLocation);
+		} else if (fs.existsSync(oldThumbLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(oldThumbLocation).mtime.getTime().toString());
+			return res.sendFile(oldThumbLocation);
+		} else {
+			return next();
+		}
+	});
+	
+	// Keep old route for backward compatibility
+	app.get('/file/thumb/:filename', (req, res, next) => {
+		const filename = req.params.filename;
+		const path = require('path');
+		const fs = require('fs');
+
+		// Check new upload folders for thumbnails
+		const thumbLocation = path.join(__dirname, '/static/uploads/images/thumb/', filename);
+		const oldThumbLocation = path.join(__dirname, '/static/file/thumb/', filename);
+
+		if (fs.existsSync(thumbLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(thumbLocation).mtime.getTime().toString());
+			return res.sendFile(thumbLocation);
+		} else if (fs.existsSync(oldThumbLocation)) {
+			res.setHeader('Cache-Control', 'public, max-age=31536000'); // 1 year cache
+			res.setHeader('ETag', fs.statSync(oldThumbLocation).mtime.getTime().toString());
+			return res.sendFile(oldThumbLocation);
+		} else {
+			return next();
 		}
 	});
 
 	// routes
-	app.use(express.static(__dirname+'/static', { redirect: false }));
-	app.use(express.static(__dirname+'/static/html', { redirect: false }));
-	app.use(express.static(__dirname+'/static/json', { redirect: false }));
+	app.use(express.static(__dirname+'/static', { 
+		redirect: false,
+		maxAge: '7d', // Cache for 7 days
+		etag: true,
+		lastModified: true
+	}));
+	app.use(express.static(__dirname+'/static/html', { 
+		redirect: false,
+		maxAge: '1h', // Cache HTML for 1 hour
+		etag: true,
+		lastModified: true
+	}));
+	app.use(express.static(__dirname+'/static/json', { 
+		redirect: false,
+		maxAge: '1h', // Cache JSON for 1 hour
+		etag: true,
+		lastModified: true
+	}));
 
 	//localisation
 	const { setGlobalLanguage } = require(__dirname+'/lib/middleware/locale/locale.js');

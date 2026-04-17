@@ -16,7 +16,7 @@ if (!isCatalog) { //dont show embed buttons in catalog
 							|| (urlObject.pathname.startsWith('/shorts/') && urlObject.pathname.substring(8)); // /shorts/videoi
 						if (videoId && videoId.length === 11) {
 							return ['<iframe class="embed-video" src="" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" style="display:block;" allowfullscreen></iframe>',
-								`https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`];
+								`https://www.youtube.com/embed/${encodeURIComponent(videoId)}`];
 						}
 					} catch (e) { /*invalid url*/ }
 					return null;

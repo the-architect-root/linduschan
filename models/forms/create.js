@@ -44,7 +44,7 @@ module.exports = async (req, res) => {
 		owner,
 		tags,
 		'banners': [],
-		'sequence_value': 1,
+		'sequence_value': 0,
 		'pph': 0,
 		'ppd': 0,
 		'ips': 0,

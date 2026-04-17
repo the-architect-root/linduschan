@@ -526,7 +526,25 @@ module.exports = {
 				}
 			}
 		);
-		return increment.value.sequence_value;
+		return increment.value.sequence_value + amount;
+	},
+
+	recalculateLastPostTimestamp: async (board) => {
+		const latestPost = await Mongo.db.collection('posts').findOne(
+			{ board: board },
+			{ sort: { bumped: -1 }, projection: { bumped: 1 } }
+		);
+		if (latestPost && latestPost.bumped) {
+			await db.updateOne(
+				{ '_id': board },
+				{ '$set': { 'lastPostTimestamp': latestPost.bumped } }
+			);
+		} else {
+			await db.updateOne(
+				{ '_id': board },
+				{ '$set': { 'lastPostTimestamp': null } }
+			);
+		}
 	},
 
 };
