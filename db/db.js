@@ -18,7 +18,12 @@ const { MongoClient, ObjectId, Int32, Binary } = require('mongodb')
 module.exports = {
 
 	connect: async () => {
-		module.exports.client = new MongoClient(dbURL);
+		module.exports.client = new MongoClient(dbURL, {
+			serverSelectionTimeoutMS: 15000,
+			connectTimeoutMS: 10000,
+			socketTimeoutMS: 45000,
+			tlsAllowInvalidCertificates: true,
+		});
 		await module.exports.client.connect();
 		module.exports.db = module.exports.client.db(dbName);
 	},
