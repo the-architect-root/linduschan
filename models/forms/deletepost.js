@@ -7,7 +7,8 @@ const uploadDirectory = require(__dirname+'/../../lib/file/uploaddirectory.js')
 	, config = require(__dirname+'/../../lib/misc/config.js')
 	, deleteQuotes = require(__dirname+'/../../lib/post/deletequotes.js')
 	, { func: pruneFiles } = require(__dirname+'/../../schedules/tasks/prune.js')
-	, buildQueue = require(__dirname+'/../../lib/build/queue.js');
+	, buildQueue = require(__dirname+'/../../lib/build/queue.js')
+	, cache = require(__dirname+'/../../lib/redis/redis.js');
 
 module.exports = async (posts, board, locals, all=false) => {
 
@@ -110,22 +111,67 @@ module.exports = async (posts, board, locals, all=false) => {
 		}
 	}
 
-	//decrement board sequence_value to keep statistics accurate
-	const boardPostCounts = {};
-	for (let i = 0; i < allPosts.length; i++) {
-		const post = allPosts[i];
-		if (!boardPostCounts[post.board]) {
-			boardPostCounts[post.board] = 0;
+	// Don't decrement sequence_value to prevent ID reuse - IDs should always increase
+	// Recalculate lastPostTimestamp and thread metadata for affected boards/threads
+	const boardsToRecalculate = new Set();
+	const threadsToRecalculate = new Set();
+	for (const post of allPosts) {
+		boardsToRecalculate.add(post.board);
+		if (post.thread) {
+			threadsToRecalculate.add(`${post.board}-${post.thread}`);
 		}
-		boardPostCounts[post.board]++;
 	}
-	for (const board in boardPostCounts) {
-		await Boards.db.updateOne(
-			{ '_id': board },
-			{ '$inc': { 'sequence_value': -boardPostCounts[board] } }
-		);
-		//recalculate lastPostTimestamp from actual posts
+	for (const board of boardsToRecalculate) {
 		await Boards.recalculateLastPostTimestamp(board);
+	}
+	// Recalculate thread metadata (replyposts/replyfiles) for affected threads
+	if (threadsToRecalculate.size > 0) {
+		const replyOrs = [...threadsToRecalculate].map(t => {
+			const [board, thread] = t.split('-');
+			return { board, thread: parseInt(thread) };
+		});
+		const threadReplyAggregates = await Posts.getThreadAggregates(replyOrs);
+		const bulkWrites = [];
+		for (const threadRef of threadsToRecalculate) {
+			const [board, thread] = threadRef.split('-');
+			const threadId = parseInt(thread);
+			const aggregate = threadReplyAggregates.find(ra => ra._id.thread === threadId && ra._id.board === board);
+			if (aggregate) {
+				bulkWrites.push({
+					'updateOne': {
+						'filter': {
+							'postId': threadId,
+							'board': board
+						},
+						'update': {
+							'$set': {
+								'replyposts': aggregate.replyposts,
+								'replyfiles': aggregate.replyfiles
+							}
+						}
+					}
+				});
+			} else {
+				// Thread no longer has any replies, set to 0
+				bulkWrites.push({
+					'updateOne': {
+						'filter': {
+							'postId': threadId,
+							'board': board
+						},
+						'update': {
+							'$set': {
+								'replyposts': 0,
+								'replyfiles': 0
+							}
+						}
+					}
+				});
+			}
+		}
+		if (bulkWrites.length > 0) {
+			await Posts.db.bulkWrite(bulkWrites);
+		}
 	}
 
 	//deleting before remarkup so quotes are accurate
@@ -166,6 +212,7 @@ module.exports = async (posts, board, locals, all=false) => {
 		buildQueue.push({
 			'task': 'buildBoards',
 		});
+		cache.deletePattern('overboard:*');
 	}
 
 	//hooray!

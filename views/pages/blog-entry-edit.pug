@@ -1,0 +1,68 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title #{__('Edit Entry')} - #{blog.title}
+
+block content
+	+boardheader(__('Edit Entry'))
+	.blog-container
+		.blog-nav
+			a(href=`/${board._id}/blog/${blog._id}/dashboard.html`) &larr; #{__('Dashboard')}
+			a(href=`/${board._id}/blog/${blog._id}.html`) #{__('View Blog')}
+		hr(size=1)
+		.blog-form-container
+			- const entry = blog.entries ? blog.entries.find(e => String(e._id) === entryId) : null;
+			if !entry
+				.error-message #{__('Entry not found')}
+				a(href=`/${board._id}/blog/${blog._id}/dashboard.html`) #{__('Back to Dashboard')}
+			else
+				h1.blog-form-title #{__('Edit Entry')}
+				form(action=`/forms/board/${board._id}/blog/edit-entry` method='POST' enctype='multipart/form-data')
+					input(type='hidden' name='_csrf' value=csrf)
+					input(type='hidden' name='blog_id' value=blog._id)
+					input(type='hidden' name='entry_id' value=entry._id)
+					.row
+						.label #{__('Content')} *
+						.blog-editor-wrap
+							.blog-editor-toolbar
+								button.md-btn(type='button' data-tag="''" data-label='bold') B
+								button.md-btn(type='button' data-tag='**' data-label='italic') i
+								button.md-btn(type='button' data-tag='__' data-label='underline') U
+								button.md-btn(type='button' data-tag='==' data-label='title') H
+								button.md-btn(type='button' data-tag='~~' data-label='strikethrough') S
+								button.md-btn(type='button' data-wrap='> ' data-label='quote') &gt;
+								select.md-font-size(title='Font size')
+									option(value='') -
+									option(value='=') m
+									option(value='==') l
+									option(value='====') xl
+							textarea#blogContent(name='content' rows='15' required)= entry.content
+					.row
+						label.checkbox-label
+							input(type='checkbox' name='isPublished' value='true' checked=entry.isPublished !== false)
+							| #{__('Published')}
+					.row
+						.label #{__('Current Media')}
+						#mediaPreviews.media-previews-grid
+							if entry.contentMedia && entry.contentMedia.length > 0
+								each media, i in entry.contentMedia
+									if media.type === 'image'
+										.media-item(data-existing='true')
+											if media.url
+												img(src=media.url alt='Media')
+											else if media.filename
+												img(src=`/file/${media.filename}` alt='Media')
+											button.media-remove(type='button' data-existing='true' data-filename=media.filename) &times;
+					.row
+						.label #{__('Add More Media')}
+						button(type='button' onclick='this.nextElementSibling.click()') #{__('Select Images')}
+						input(type='file' name='content_media' accept='image/*' multiple style='display:none;')
+						input(type='hidden' name='remove_media' id='removeMediaInput' value='')
+					.row
+						.label #{__('Edit Code')} *
+						input(type='password' name='editCode' placeholder='Enter your edit code' required)
+					.row
+						input(type='submit' value=__('Save Changes'))
+						a.ml-5(href=`/${board._id}/blog/${blog._id}/dashboard.html`) #{__('Cancel')}
+	hr(size=1)

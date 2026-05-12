@@ -43,6 +43,24 @@ module.exports = {
 		}
 	},
 
+	setDefaultConfig: () => {
+		const defaultConfig = {
+			otherMimeTypes: [
+				'application/epub+zip',
+				'application/zip',
+				'application/x-zip-compressed',
+				'multipart/x-zip',
+			],
+			disableAnonymizerPosting: false,
+			disableVpnPosting: false,
+			vpnBlock: {
+				enabled: false,
+				apiKey: null,
+			},
+		};
+		return module.exports.db.collection('globalsettings').replaceOne({ _id: 'globalsettings' }, defaultConfig, { upsert: true });
+	},
+
 	ObjectId,
 
 	NumberInt: Int32,

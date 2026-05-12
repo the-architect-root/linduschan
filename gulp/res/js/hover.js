@@ -166,6 +166,20 @@ window.addEventListener('DOMContentLoaded', () => {
 	for (let i = 0; i < quotes.length; i++) {
 		quotes[i].addEventListener('mouseover', toggleHighlightPost, false);
 		quotes[i].addEventListener('mouseout', toggleHighlightPost, false);
+		// Prevent quote links from adding to browser history
+		quotes[i].addEventListener('click', function(e) {
+			// Only handle if it's a same-page anchor link and target exists on current page
+			if (this.hash && this.pathname === window.location.pathname) {
+				const targetId = this.hash.substring(1);
+				const targetElement = document.getElementById(targetId);
+				// Only intercept if the target element exists on the current page
+				if (targetElement) {
+					e.preventDefault();
+					targetElement.scrollIntoView({ behavior: 'smooth' });
+					// Don't update URL to preserve browser history
+				}
+			}
+		}, false);
 	}
 
 	window.addEventListener('addPost', function(e) {
@@ -178,6 +192,20 @@ window.addEventListener('DOMContentLoaded', () => {
 			newquotes[i].removeEventListener('mouseout', toggleHighlightPost);
 			newquotes[i].addEventListener('mouseover', toggleHighlightPost, false);
 			newquotes[i].addEventListener('mouseout', toggleHighlightPost, false);
+			// Prevent quote links from adding to browser history
+			newquotes[i].addEventListener('click', function(e) {
+				// Only handle if it's a same-page anchor link and target exists on current page
+				if (this.hash && this.pathname === window.location.pathname) {
+					const targetId = this.hash.substring(1);
+					const targetElement = document.getElementById(targetId);
+					// Only intercept if the target element exists on the current page
+					if (targetElement) {
+						e.preventDefault();
+						targetElement.scrollIntoView({ behavior: 'smooth' });
+						// Don't update URL to preserve browser history
+					}
+				}
+			}, false);
 		}
 	});
 

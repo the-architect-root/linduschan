@@ -77,7 +77,7 @@ const Mongo = require(__dirname+'/db/db.js')
 		const frameAncestors = isBypassPage ? "'self'" : "'none'";
 		res.setHeader('Content-Security-Policy', 
 			"default-src 'self'; " +
-			"script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; " +
 			"style-src 'self' 'unsafe-inline'; " +
 			"img-src 'self' data: blob: https:; " +
 			"font-src 'self' data:; " +
@@ -129,14 +129,25 @@ const Mongo = require(__dirname+'/db/db.js')
 	app.set('views', views);
 
 	const loadAppLocals = () => {
-		const { language, cacheTemplates, boardDefaults, globalLimits, captchaOptions, archiveLinksURL,
-			reverseImageLinksURL, meta, enableWebring, globalAnnouncement, enableWeb3, ethereumLinksURL } = config.get;
+		const cfg = config.get || {};
+		const language = cfg.language || 'en';
+		const cacheTemplates = cfg.cacheTemplates || false;
+		const boardDefaults = cfg.boardDefaults || { theme: 'yotsuba', codeTheme: 'dark' };
+		const globalLimits = cfg.globalLimits || { postFilesSize: { max: 20971520 } };
+		const captchaOptions = cfg.captchaOptions || { type: 'google' };
+		const archiveLinksURL = cfg.archiveLinksURL || '';
+		const reverseImageLinksURL = cfg.reverseImageLinksURL || '';
+		const meta = cfg.meta || {};
+		const enableWebring = cfg.enableWebring || false;
+		const globalAnnouncement = cfg.globalAnnouncement || '';
+		const enableWeb3 = cfg.enableWeb3 || false;
+		const ethereumLinksURL = cfg.ethereumLinksURL || '';
 		//cache loaded templates
 		app.cache = {};
 		app[cacheTemplates === true ? 'enable' : 'disable']('view cache');
 		//default settings
 		app.locals.Permissions = Permissions;
-		app.locals.defaultTheme = 'clear';
+		app.locals.defaultTheme = boardDefaults.theme;
 		app.locals.defaultCodeTheme = boardDefaults.codeTheme;
 		app.locals.globalLimits = globalLimits;
 		app.locals.ethereumLinksURL = ethereumLinksURL;

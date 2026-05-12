@@ -11,6 +11,10 @@ noscript
 //- whether this page is rendered for a board
 - const isBoard = board != null;
 
+//- SEO meta tags
+meta(name='description' content='Induschan - A free speech imageboard. Anonymous posting, image sharing, and community discussions with minimal censorship.')
+meta(name='keywords' content='Induschan, indian, india, imageboard, indiachan, bharatchan, indus, bharat, inch, bhach, anonymous posting, free speech, forum, discussion board')
+
 //- general meta and opengraph meta tags
 if isBoard
 	if board.settings.description
@@ -19,6 +23,20 @@ if isBoard
 		meta(name='keywords' content=board.settings.tags.join(','))
 meta(property='og:site_name', value=meta.siteName)
 meta(property='og:url', content=meta.url)
+meta(property='og:title' content=meta.siteName)
+meta(property='og:description' content='Induschan - A free speech imageboard. Anonymous posting, image sharing, and community discussions with minimal censorship.')
+meta(property='og:type' content='website')
+
+//- Twitter Card tags
+meta(name='twitter:card' content='summary')
+meta(name='twitter:title' content=meta.siteName)
+meta(name='twitter:description' content='Induschan - A free speech imageboard. Anonymous posting, image sharing, and community discussions with minimal censorship.')
+
+//- Canonical URL
+if isBoard
+	link(rel='canonical' href=`${meta.url}/${board.uri}`)
+else
+	link(rel='canonical' href=meta.url)
 
 //- main stylesheet
 link(rel='stylesheet' href=`/css/style.css?v=${commit}&ct=${captchaOptions.type}`)
@@ -40,6 +58,8 @@ script(src=`/js/lang/${pageLanguage}.js?v=${commit}`)
 
 //- main script
 script(src=`/js/all.js?v=${commit}&ct=${captchaOptions.type}`)
+
+//- keyboard shortcuts and advanced features are bundled in all.js
 
 //- optional web3 script
 if enableWeb3 || isBoard && board.settings.enableWeb3

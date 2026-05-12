@@ -49,7 +49,7 @@
     --input-borders: var(--selection);
     --input-background: var(--bg-light);
     --board-title: var(--fg-dark);
-    --title-color: var(--red-light);
+    --title-color: #1b196b;
     --font-color: var(--fg);
     --name-color: var(--blue);
     --subject-color: var(--fg-dark);

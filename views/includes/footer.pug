@@ -6,5 +6,49 @@ unless minimal
 
 //- "render" script - for scripted things that are blocking
 script(src=`/js/render.js?v=${commit}`)
-//- Live2D widget script
-script(src=`/js/live2d-widget.js?v=${commit}`)
+
+//- Poll voting script
+script.
+	// Poll voting functionality
+	window.submitPollVote = async function(board, postId, optionIndex) {
+		try {
+			const response = await fetch('/forms/vote-poll', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-Token': document.querySelector('meta[name=\"csrf\"]')?.content || ''
+				},
+				body: JSON.stringify({ board, postId, option: optionIndex })
+			});
+			
+			const result = await response.json();
+			
+			if (result.success) {
+				// Refresh page to show results
+				location.reload();
+			} else {
+				alert(result.error || 'Failed to vote');
+			}
+		} catch (err) {
+			console.error('Vote error:', err);
+			alert('Failed to submit vote');
+		}
+	};
+
+	// Load poll results via AJAX
+	window.loadPollResults = async function(board, postId) {
+		try {
+			const response = await fetch(`/forms/poll-results?board=${board}&postId=${postId}`);
+			const data = await response.json();
+			
+			if (data.error) {
+				console.error(data.error);
+				return;
+			}
+			
+			// Update poll display with results
+			// This would be implemented in the post rendering
+		} catch (err) {
+			console.error('Error loading poll results:', err);
+		}
+	};

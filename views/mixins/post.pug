@@ -82,7 +82,7 @@ mixin post(post, truncate, manage=false, globalmanage=false, ban=false, overboar
 						option(value='watch') #{__('Watch')}
 						option(value='playlist') #{__('Playlist')}
 		.post-data
-			if post.files.length > 0
+			if post.files && post.files.length > 0
 				.post-files(class=(post.files.length > 1 ? 'fn' : ''))
 					each file, fileindex in post.files
 						if file.mimetype === 'tegaki/replay' && post.files.some(f => f.originalFilename.slice(0, -3) === file.originalFilename.slice(0,-4))
@@ -97,19 +97,22 @@ mixin post(post, truncate, manage=false, globalmanage=false, ban=false, overboar
 											source(src=`/${post.board}/file/${file.filename}` type='video/webm')
 										button.close-video(style='position:absolute;top:5px;right:5px;background:red;color:white;border:none;padding:5px 10px;cursor:pointer;z-index:1000;font-weight:bold;' onclick='this.parentElement.style.display="none";this.parentElement.previousElementSibling.style.display="block";this.parentElement.querySelector("video").pause();') ×
 								else if type === 'audio'
-									img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy' onclick=`this.style.display='none';this.nextElementSibling.style.display='block';this.nextElementSibling.play();`)
-									audio(style='display:none;' controls preload='none' onclick='this.style.display="none";this.previousElementSibling.style.display="block";')
+									img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy' onclick=`this.style.display='none';this.nextElementSibling.style.display='block';this.nextElementSibling.play();this.parentElement.dataset.expanded='true';`)
+									audio(style='display:none;' controls preload='none' onclick='this.style.display="none";this.previousElementSibling.style.display="block";this.parentElement.dataset.expanded="false";')
 										source(src=`/${post.board}/file/${file.filename}` type='audio/webm')
 								else
 									a(target='_blank' href=`/${post.board}/file/${file.filename}`)
-										if post.spoiler || file.spoiler
-											div.spoilerimg.file-thumb
-										else if file.hasThumb
-											img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy')
-										else if file.attachment
-											div.attachmentimg.file-thumb(data-mimetype=file.mimetype)
-										else
-											img.file-thumb(src=`/${post.board}/file/${file.filename}` height=file.geometry.height width=file.geometry.width loading='lazy')
+								if type !== 'video' && type !== 'audio'
+									if post.spoiler || file.spoiler
+										.spoiler-container(style=`position:relative;width:${file.geometry.thumbwidth}px;height:${file.geometry.thumbheight}px;cursor:pointer;` onclick=`const spoiler=this.querySelector('.spoilerimg'), img=this.querySelector('.file-thumb'); spoiler.style.display='none';img.style.display='block';`)
+											img.spoilerimg(class='spoilerimg' src='/file/spoiler.png' width=file.geometry.thumbwidth height=file.geometry.thumbheight style=`object-fit:cover;position:absolute;top:0;left:0;z-index:2;display:block;width:${file.geometry.thumbwidth}px;height:${file.geometry.thumbheight}px;`)
+											img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy' style='display:none;position:absolute;top:0;left:0;z-index:1;')
+									else if file.hasThumb
+										img.file-thumb(src=`/${post.board}/file/thumb/${file.hash}${file.thumbextension}` height=file.geometry.thumbheight width=file.geometry.thumbwidth loading='lazy')
+									else if file.attachment
+										div.attachmentimg.file-thumb(data-mimetype=file.mimetype)
+									else
+										img.file-thumb(src=`/${post.board}/file/${file.filename}` height=file.geometry.height width=file.geometry.width loading='lazy')
 			- if (post.message && modview) { post.message = post.message.replace(new RegExp(`<a class="quote" href="/${post.board}/`, 'g'), `<a class="quote" href="/${post.board}/manage/`); } //its either this, a subdomain, or nothing.
 			- let truncatedMessage = post.message;
 			if post.message
@@ -130,7 +133,11 @@ mixin post(post, truncate, manage=false, globalmanage=false, ban=false, overboar
 					pre.post-message !{truncatedMessage}
 				else
 					pre.post-message !{post.message}
-			if !post.message && post.files.length === 0
+			if !post.message && post.poll
+				p.post-poll-preview 
+					strong POLL: 
+					span= post.poll.question
+			if !post.message && !post.poll && (!post.files || post.files.length === 0)
 				p #{__('No message or files.')}
 			if post.signature && post.address
 				+web3signature(post.signature, post.address)
@@ -145,29 +152,45 @@ mixin post(post, truncate, manage=false, globalmanage=false, ban=false, overboar
 				+banmessage(post.banmessage)
 			if truncatedMessage !== post.message
 				div.cb.mt-5.ml-5
-					| #{__('Message too long.')} #[a.viewfulltext(href=`${postURL}#${post.postId}`) #{__('View the full text')}]
+					a#seemore(href=`/${post.board}/${post.thread || post.postId}.html#${post.postId}`) #{__('Message too long. Click here to view the full text.')}
+			//- Poll display
+			if post.poll && post.poll.options && post.poll.options.length > 0
+				.post-poll(data-board=post.board data-post-id=post.postId)
+					h4= post.poll.question
+					.poll-options
+						each option, idx in post.poll.options
+							label.poll-option
+								input(type='radio' name=`poll-${post.postId}` value=idx)
+								span= option
+					button.poll-vote-btn(onclick=`submitPollVote('${post.board}', '${post.postId}', document.querySelector('input[name=poll-${post.postId}]:checked')?.value)`) Vote
+					.poll-results(style='display:none;')
+					.poll-total
 			if post.omittedposts || post.omittedfiles
 				div.cb.mt-5.ml-5
-					img.jsonly.dummy-link.expand-omitted(height='12' width='12' data-shown=post.replies.length data-board=post.board data-thread=post.postId src='/file/plus.png')
+					img.jsonly.dummy-link.expand-omitted(height='12' width='12' data-shown=(post.replies ? post.replies.length : 0) data-board=post.board data-thread=post.postId src='/file/plus.png')
 					- const ompo = post.omittedposts;
 					- const omfi = post.omittedfiles;
 					span
 						| #{__(`${ompo > 1 ? '%s' : ompo} repl${ompo > 1 ? 'ies' : 'y'}${omfi > 0 ? ` and ${omfi > 1 ? '%s' : omfi} file${omfi > 1 ? 's' : ''}` : ''} omitted.`, ompo > 1 ? ompo : omfi, omfi)} 
 					| #[a(href=postURL) #{__('View the full thread')}]
-			if post.previewbacklinks != null
-				if post.previewbacklinks.length > 0
-					div.replies.mt-5.ml-5 #{__n('Replies', 2)}: 
-						each backlink in post.previewbacklinks
-							a.quote(href=`${postURL}#${backlink.postId}`) &gt;&gt;#{backlink.postId}
-							|  
-						if post.previewbacklinks.length < post.backlinks.length
+			if post.previewbacklinks && post.previewbacklinks.length > 0
+				small
+					for backlink in post.previewbacklinks
+						if backlink.postId !== post.postId
+							- const isMyPost = myPostIds && myPostIds.has(`${backlink.board || post.board}-${backlink.postId}`);
+							a(rel="nofollow" href=`${postURL}#${backlink.postId}` class=(isMyPost ? 'my-post' : '')) #{__('%s', backlink.postId)}
+							|
+						if post.backlinks && post.previewbacklinks.length < post.backlinks.length
 							- const ombls = post.backlinks.length-post.previewbacklinks.length;
 							| + #[a(href=`${postURL}#${post.postId}`) #{__('%s earlier', ombls)}]
 							|  
 			else if post.backlinks && post.backlinks.length > 0
 				div.replies.mt-5.ml-5 #{__n('Replies', 2)}: 
 					each backlink in post.backlinks
+						- const isMyPost = myPostIds && myPostIds.has(`${backlink.board || post.board}-${backlink.postId}`);
 						a.quote(href=`${postURL}#${backlink.postId}`) &gt;&gt;#{backlink.postId}
+						if isMyPost
+							small (You)
 						|  
 	if manage === true
 		each r in post.reports

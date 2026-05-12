@@ -16,7 +16,8 @@ module.exports = async (req, res, next) => {
 		({ html, json } = await buildBoard({
 			board: res.locals.board,
 			page,
-			maxPage
+			maxPage,
+			myPostIds: res.locals.myPostIds
 		}));
 	} catch (err) {
 		console.error('Board page error:', err);
@@ -26,7 +27,6 @@ module.exports = async (req, res, next) => {
 	if (req.path.endsWith('.json')) {
 		return res.set('Cache-Control', 'max-age=0').json(json);
 	} else {
-		res.sendFile(path.join(__dirname, '../../static/html', req.params.board, page === 1 ? 'index' : `${page}.html`));
 		return res.set('Cache-Control', 'max-age=0').send(html);
 	}
 

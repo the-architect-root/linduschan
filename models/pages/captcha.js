@@ -22,10 +22,7 @@ module.exports = async (req, res, next) => {
 	let maxAge = 5*60*1000;
 	try {
 		if (!res.locals.anonymizer) {
-			const ratelimit = await Ratelimits.incrmentQuota(res.locals.ip.cloak, 'captcha', rateLimitCost.captcha);
-			if (ratelimit > 100) {
-				return res.status(429).redirect('/file/ratelimit.png');
-			}
+			await Ratelimits.incrmentQuota(res.locals.ip.cloak, 'captcha', rateLimitCost.captcha);
 		}
 		const captchaCount = await Captchas.db.estimatedDocumentCount();
 		if (captchaCount >= captchaOptions.generateLimit) {

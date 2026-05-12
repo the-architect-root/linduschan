@@ -1,0 +1,16 @@
+FROM node:18-bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    graphicsmagick \
+    imagemagick \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run setup
+
+EXPOSE 7000
+CMD ["node", "server.js"]

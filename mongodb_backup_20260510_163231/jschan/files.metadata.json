@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"},{"v":{"$numberInt":"2"},"key":{"count":{"$numberInt":"1"}},"name":"count_1"},{"v":{"$numberInt":"2"},"key":{"board":{"$numberDouble":"1.0"},"hash":{"$numberDouble":"1.0"}},"name":"board_1_hash_1"}],"uuid":"4146661085414c6e8d2fff0061fbe289","collectionName":"files","type":"collection"}

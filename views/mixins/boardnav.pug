@@ -4,6 +4,9 @@ mixin boardnav(selected, showIndex, upLevel)
 		a(href=`${upLevel ? '../' : ''}index.html` class=(selected === 'index' ? 'bold' : '')) [#{__('Index')}]
 	|  
 	a(href=`${upLevel ? '../' : ''}catalog.html` class=(selected === 'catalog' ? 'bold' : '')) [#{__('Catalog')}]
+	if board._id === 'gen'
+		|  
+		a(href=`${upLevel ? '../' : ''}blogs.html` class=(selected === 'blogs' ? 'bold' : '')) [#{__('Blogs')}]
 	if board.settings != null && board.settings.hideBanners === false
 		|  
 		a(href=`${upLevel ? '../' : ''}banners.html` class=(selected === 'banners' ? 'bold' : '')) [#{__('Banners')}]

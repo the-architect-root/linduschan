@@ -19,6 +19,31 @@ module.exports = {
 		return db.countDocuments();
 	},
 
+	postsToday: async () => {
+		// Get current time in IST (UTC+5:30)
+		const now = new Date();
+		const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
+		const istNow = new Date(now.getTime() + istOffset);
+		
+		// Get start of today in IST (12am IST)
+		const istToday = new Date(istNow);
+		istToday.setHours(0, 0, 0, 0);
+		
+		// Convert back to UTC for database query
+		const utcStartOfDay = new Date(istToday.getTime() - istOffset);
+		
+		return db.countDocuments({
+			'date': { '$gte': utcStartOfDay }
+		});
+	},
+
+	activeUsers: async () => {
+		const redis = require(__dirname+'/../lib/redis/redis.js');
+		// Count unique users with activity in the last 2 minutes
+		const activeSessions = await redis.getPattern('active_user:*');
+		return Object.keys(activeSessions).length;
+	},
+
 	getThreadPage: async (board, thread) => {
 		const threadsBefore = await db.aggregate([
 			{
@@ -100,7 +125,7 @@ module.exports = {
 			'thread': null,
 		};
 		// Exclude specific boards from overboard and homepage
-		const excludedBoards = ['gama', 'vent', 'samaj'];
+		const excludedBoards = ['kama', 'vent', 'samaj'];
 		if (board) {
 			if (Array.isArray(board)) {
 				//array for overboard - filter out excluded boards
@@ -171,7 +196,7 @@ module.exports = {
 			// no filter - include both thread OPs and replies
 		};
 		// Exclude specific boards from homepage
-		const excludedBoards = ['gama', 'vent', 'samaj'];
+		const excludedBoards = ['kama', 'vent', 'samaj'];
 		postsQuery['board'] = {
 			'$nin': excludedBoards
 		};
@@ -551,7 +576,7 @@ module.exports = {
 				}
 			}, {
 				'$push': {
-					'backlinks': { _id: postMongoId, postId: postId }
+					'backlinks': { _id: postMongoId, postId: postId, board: data.board }
 				}
 			});
 		}
@@ -858,6 +883,7 @@ module.exports = {
 			if (!destinationThreadId) {
 				newDestinationThreadId = lastId;
 			}
+			const now = new Date();
 			bulkWrites = postMongoIds.map((postMongoId, index) => ({
 				'updateOne': {
 					'filter': {
@@ -866,6 +892,8 @@ module.exports = {
 					'update': {
 						'$set': {
 							'postId': lastId + index,
+							'date': now,
+							'u': now.getTime()
 						}
 					}
 				}
@@ -922,7 +950,7 @@ module.exports = {
 	},
 
 	threadExistsMiddleware: async (req, res, next) => {
-		const thread = await module.exports.getPost(req.params.board, req.params.id);
+		const thread = await module.exports.getThread(req.params.board, req.params.id, true);
 		if (!thread) {
 			return res.status(404).render('404');
 		}
@@ -952,6 +980,202 @@ module.exports = {
 		}
 		res.locals.post = post;
 		next();
+	},
+
+	getRecentFiles: async (limit = 5) => {
+		// Find recent posts that have files, excluding kama board
+		const postsWithFiles = await db.find({
+			'files.0': { '$exists': true },
+			'board': { '$ne': 'kama' }
+		}, {
+			'projection': {
+				'board': 1,
+				'postId': 1,
+				'thread': 1,
+				'files': 1,
+				'date': 1,
+			},
+			'sort': { 'date': -1 },
+			'limit': limit * 5 // Get more posts since some may have multiple files and we're filtering
+		}).toArray();
+
+		// Flatten files array and add post context to each file
+		// Filter out spoilered files
+		const files = [];
+		for (const post of postsWithFiles) {
+			if (post.files && post.files.length > 0) {
+				for (const file of post.files.slice(0, 2)) { // Max 2 files per post
+					// Skip spoilered files
+					if (file.spoiler) {
+						continue;
+					}
+					files.push({
+						...file,
+						board: post.board,
+						thread: post.thread || post.postId,
+						postId: post.postId,
+					});
+					if (files.length >= limit) {
+						return files.slice(0, limit);
+					}
+				}
+			}
+		}
+		return files.slice(0, limit);
+	},
+
+	getActiveThreads: async (userSession) => {
+		if (!userSession) return [];
+		// Find all posts by user
+		const userPosts = await db.find({
+			'userSession': userSession
+		}, {
+			projection: { 'thread': 1, 'postId': 1, 'board': 1 }
+		}).toArray();
+
+		if (userPosts.length === 0) return [];
+
+		// Get unique thread IDs (for threads where user replied)
+		const threadIds = [...new Set(userPosts.map(p => p.thread).filter(t => t !== null))];
+		// Get OP postIds where user made the thread
+		const opPostIds = userPosts.filter(p => p.thread === null).map(p => p.postId);
+
+		// Build list of all thread IDs
+		const allThreadIds = [...new Set([...threadIds, ...opPostIds])];
+
+		if (allThreadIds.length === 0) return [];
+
+		// Fetch the actual thread OP posts
+		const threads = await db.find({
+			'postId': { '$in': allThreadIds },
+			'thread': null
+		}).sort({ 'bumped': -1 }).toArray();
+
+		return threads;
+	},
+
+	getMyThreads: async (userSession) => {
+		if (!userSession) return [];
+		// Find OP posts by user (threads they created)
+		const threads = await db.find({
+			'userSession': userSession,
+			'thread': null
+		}).sort({ 'bumped': -1 }).toArray();
+
+		return threads;
+	},
+
+	getFeaturedThreads: async (limit = 10) => {
+		// Get featured threads from featured collection
+		const featured = await db.find({
+			'featured': true,
+			'thread': null
+		}, {
+			projection: { board: 1, postId: 1 }
+		}).sort({ 'featuredDate': -1 }).limit(limit).toArray();
+
+		if (featured.length === 0) return [];
+
+		// Get full thread details
+		const threadIds = featured.map(f => f.postId);
+		const threads = await db.find({
+			'postId': { '$in': threadIds },
+			'thread': null
+		}).toArray();
+
+		// Sort by featured order
+		const threadMap = new Map(threads.map(t => [t.postId, t]));
+		return featured.map(f => threadMap.get(f.postId)).filter(Boolean);
+	},
+
+	featureThread: async (board, threadId) => {
+		return db.updateOne({
+			'board': board,
+			'postId': threadId,
+			'thread': null
+		}, {
+			'$set': {
+				'featured': true,
+				'featuredDate': new Date()
+			}
+		});
+	},
+
+	unfeatureThread: async (board, threadId) => {
+		return db.updateOne({
+			'board': board,
+			'postId': threadId,
+			'thread': null
+		}, {
+			'$unset': {
+				'featured': '',
+				'featuredDate': ''
+			}
+		});
+	},
+
+	// Poll voting - one vote per IP per poll
+	votePoll: async (board, postId, optionIndex, ip) => {
+		// Check if already voted
+		const post = await db.findOne({
+			'_id': new Mongo.ObjectId(postId),
+			'board': board
+		});
+		
+		if (!post || !post.poll) {
+			return { success: false, error: 'Poll not found' };
+		}
+		
+		const existingVote = post.pollVotes && post.pollVotes.find(v => v.ip === ip);
+		if (existingVote) {
+			return { success: false, error: 'Already voted' };
+		}
+		
+		// Record vote
+		await db.updateOne(
+			{ '_id': new Mongo.ObjectId(postId), 'board': board },
+			{
+				$push: {
+					'pollVotes': {
+						ip: ip,
+						option: optionIndex,
+						date: new Date()
+					}
+				}
+			}
+		);
+		
+		return { success: true };
+	},
+
+	// Get poll results
+	getPollResults: async (board, postId, ip) => {
+		const post = await db.findOne({
+			'_id': new Mongo.ObjectId(postId),
+			'board': board
+		});
+		
+		if (!post || !post.poll) {
+			return null;
+		}
+		
+		const votes = post.pollVotes || [];
+		const totalVotes = votes.length;
+		const hasVoted = votes.some(v => v.ip === ip);
+		
+		const results = post.poll.options.map((opt, idx) => ({
+			option: opt,
+			count: votes.filter(v => v.option === idx).length,
+			percentage: totalVotes > 0 ? Math.round((votes.filter(v => v.option === idx).length / totalVotes) * 100) : 0
+		}));
+		
+		return {
+			question: post.poll.question,
+			options: post.poll.options,
+			totalVotes,
+			hasVoted,
+			results
+		};
 	},
 
 };

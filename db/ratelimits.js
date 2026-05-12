@@ -11,23 +11,35 @@ module.exports = {
 		return db.deleteOne({ '_id': `${identifier}-${action}` });
 	},
 
-	incrmentQuota: (identifier, action, amount) => {
-		return db.findOneAndUpdate(
-			{
-				'_id': `${identifier}-${action}`
-			},
-			{
-				'$inc': {
-					'sequence_value': amount
+	incrmentQuota: async (identifier, action, amount, retries = 3) => {
+		const key = `${identifier}-${action}`;
+		try {
+			const result = await db.findOneAndUpdate(
+				{
+					'_id': key
 				},
-				'$setOnInsert': {
-					'expireAt': new Date()
+				{
+					'$inc': {
+						'sequence_value': amount
+					},
+					'$setOnInsert': {
+						'expireAt': new Date()
+					}
+				},
+				{
+					'upsert': true
 				}
-			},
-			{
-				'upsert': true
+			);
+			return result.value ? result.value.sequence_value : 0;
+		} catch (err) {
+			// Handle duplicate key error from race condition
+			if (err.code === 11000 && retries > 0) {
+				// Retry after a small delay
+				await new Promise(resolve => setTimeout(resolve, 10));
+				return module.exports.incrmentQuota(identifier, action, amount, retries - 1);
 			}
-		).then(r => { return r.value ? r.value.sequence_value : 0; });
+			throw err;
+		}
 	},
 
 	deleteAll: () => {

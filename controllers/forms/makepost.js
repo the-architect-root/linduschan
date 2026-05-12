@@ -29,8 +29,18 @@ module.exports = {
 		const hasNoMandatoryFile = globalLimits.postFiles.max !== 0 && res.locals.board.settings.maxFiles !== 0 && res.locals.numFiles === 0;
 		const disableBoardAnonymizerFilePosting = res.locals.board.settings.disableAnonymizerFilePosting && !res.locals.permissions.get(Permissions.MANAGE_BOARD_GENERAL);
 
+		// Check if message contains a poll (to allow posts with only polls)
+		let hasPoll = false;
+		if (req.body.message && res.locals.permissions.get(Permissions.USE_MARKDOWN_POLL)) {
+			const pollMatch = req.body.message.match(/\[poll\]([\s\S]*?)\[\/poll\]/mi);
+			if (pollMatch) {
+				const lines = pollMatch[1].trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
+				hasPoll = lines.length >= 3;
+			}
+		}
+
 		const errors = await checkSchema([
-			{ result: (lengthBody(req.body.message, 1) && res.locals.numFiles === 0), expected: false, error: __('Posts must include a message or file') },
+			{ result: (lengthBody(req.body.message, 1) && res.locals.numFiles === 0 && !hasPoll), expected: false, error: __('Posts must include a message or file') },
 			{ result: (res.locals.anonymizer && (disableAnonymizerFilePosting || disableBoardAnonymizerFilePosting)
 				&& res.locals.numFiles > 0 && !res.locals.permissions.get(Permissions.BYPASS_ANONYMIZER_RESTRICTIONS)), expected: false, error: __(`Posting files through anonymizers has been disabled ${disableAnonymizerFilePosting ? 'globally' : 'on this board'}`) },
 			{ result: res.locals.numFiles > res.locals.board.settings.maxFiles, blocking: true, expected: false, error: __(`Too many files. Max files per post ${res.locals.board.settings.maxFiles < globalLimits.postFiles.max ? 'on this board ' : ''}is %s`, res.locals.board.settings.maxFiles) },

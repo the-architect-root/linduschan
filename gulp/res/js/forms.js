@@ -426,27 +426,19 @@ class postFormHandler {
 						//do modal for errors/messages
 						if (json.message || json.messages || json.error || json.errors) {
 							doModal(json);
-						} else if (socket && socket.connected) {
-							//set hash to scroll to your post if you are connected to the socket (it will be in the DOM by this point)
-							window.location.hash = json.postId;
 						} else {
 							//if we are not in a thread so follow the redirect to open the new thread
 							if (!isThread) {
 								return window.location = json.redirect;
 							}
-							//otherwise save the postId for you tracking after forceUpdate() finishes
-							setLocalStorage('myPostId', json.postId);
-							//not connected to socket, so force fetch the JSON
-							forceUpdate();
+							//reload to show the new reply properly
+							window.location.reload();
 						}
 
 						//if the form has data attribute to reset on submission, clear it now (reset() handled stuff like saved name, flag, etc)
 						if (this.resetOnSubmit) {
 							this.reset();
 						}
-
-						//start 5s cooldown timer
-						this.startCooldown(5000);
 
 					} else {
 

@@ -1,0 +1,92 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title #{__('New Entry')} - #{blog.title}
+
+block content
+	+boardheader(__('New Entry'))
+	.blog-container
+		.blog-nav
+			a(href=`/${board._id}/blog/${blog._id}.html`) &larr; #{__('View Blog')}
+		hr(size=1)
+		h1.blog-dash-title #{__('New Entry')}
+		if error === 'invalidcode'
+			.error-message #{__('Invalid edit code')}
+		if error === 'empty'
+			.error-message #{__('Content cannot be empty')}
+		if saved
+			.success-message #{__('Entry saved!')}
+		.blog-dash-section
+			form(action=`/forms/board/${board._id}/blog/add-entry` method='POST' enctype='multipart/form-data')
+				input(type='hidden' name='_csrf' value=csrf)
+				input(type='hidden' name='blog_id' value=blog._id)
+				.blog-editor-wrap.fullscreen-editor
+					.blog-editor-toolbar
+						button.md-btn(type='button' data-tag="''" data-label='bold') B
+						button.md-btn(type='button' data-tag='**' data-label='italic') i
+						button.md-btn(type='button' data-tag='__' data-label='underline') U
+						button.md-btn(type='button' data-tag='==' data-label='title') H
+						button.md-btn(type='button' data-tag='~~' data-label='strikethrough') S
+						button.md-btn(type='button' data-wrap='> ' data-label='quote') &gt;
+						select.md-font-size(title='Font size')
+							option(value='') -
+							option(value='=') m
+							option(value='==') l
+							option(value='====') xl
+						span.md-btn-label #{__('Markdown')}
+					textarea#blogContent(name='content' placeholder='Write your entry...' required)
+				#mediaToolbar.media-toolbar
+					button#mediaUploadBtn.media-insert-btn(type='button') #{__('Insert Image')}
+					input#blogMedia(type='file' accept='image/*' multiple style='display:none;')
+				#mediaList.media-inline-list
+				.row
+					label.checkbox-label
+						input(type='checkbox' name='isPublished' value='true' checked)
+						| #{__('Publish immediately')}
+				.row
+					input(type='password' name='editCode' placeholder='Edit code' required)
+				.row
+					input(type='submit' value=__('Publish Entry'))
+		hr(size=1)
+		if blog.entries && blog.entries.length > 0
+			h2 #{__('Entries')} (#{blog.entries.length})
+			each entry in blog.entries.slice().reverse()
+				.blog-dash-entry
+					.blog-dash-entry-header
+						strong= entry.title || __('(untitled)')
+						span.blog-dash-entry-status(class=entry.isPublished !== false ? 'published' : 'draft')
+							= entry.isPublished !== false ? __('Published') : __('Draft')
+						span.blog-dash-entry-date #{new Date(entry.createdDate).toLocaleString(pageLanguage, { hourCycle:'h23' })}
+					.blog-dash-entry-actions
+						a(href=`/${board._id}/blog/${blog._id}/entry/${entry._id}/edit.html`) #{__('Edit')}
+						form.dash-inline-form(action=`/forms/board/${board._id}/blog/delete-entry` method='POST' onsubmit='return confirm("Delete this entry?")')
+							input(type='hidden' name='_csrf' value=csrf)
+							input(type='hidden' name='blog_id' value=blog._id)
+							input(type='hidden' name='entry_id' value=entry._id)
+							input(type='hidden' name='editCode' value='')
+							button.dash-link(type='submit') #{__('Delete')}
+		else
+			p #{__('No entries yet.')}
+	hr(size=1)
+	.blog-dash-section
+		form(action=`/forms/board/${board._id}/blog/delete` method='POST' onsubmit='return confirm("Are you sure you want to permanently delete this blog and all its entries and comments?")')
+			input(type='hidden' name='_csrf' value=csrf)
+			input(type='hidden' name='blog_id' value=blog._id)
+			input(type='hidden' name='confirm' value='true')
+			.row
+				input(type='password' name='editCode' placeholder='Enter edit code to delete blog' required)
+			.row
+				input.danger-btn(type='submit' value=__('Delete Blog Permanently'))
+	hr(size=1)
+	script.
+		document.querySelectorAll('.dash-inline-form').forEach(form => {
+			form.addEventListener('submit', function(e) {
+				const code = prompt('Enter edit code:');
+				if (code) {
+					this.querySelector('input[name="editCode"]').value = code;
+				} else {
+					e.preventDefault();
+				}
+			});
+		});

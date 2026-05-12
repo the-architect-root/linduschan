@@ -1,4 +1,5 @@
 node_modules/
+configs/secrets.js
 static/
 docker/jschan/Dockerfile
 docker/jschan/Dockerfile-reset

@@ -6,20 +6,21 @@ block head
 		meta(http-equiv="refresh" content=`3;url=${redirect}`)
 
 block content
-	h1 #{title}
-	ul
-		if message
-			li #{message}
-		if error
-			li #{error}
-		if messages
-			each msg in messages
-				li #{msg}
-		if errors
-			each error in errors
-				li #{error}
-	if link
-		div
-			a.button(href=link.href target='_blank') #{link.text}
-	if redirect
-		p #{__('You will be redirected shortly.')} #[a(href=redirect) #{__('Click here if you are not redirected automatically.')}]
+	.message-container(style='max-width: 600px; margin: 50px auto; padding: 30px; background: var(--post-color); border: 1px solid var(--border-color); border-radius: 8px;')
+		h1(style='font-size: 1.5em; margin-bottom: 20px; color: var(--text-color);') #{title}
+		ul(style='list-style: none; padding: 0;')
+			if message
+				li(style='padding: 10px 0; color: var(--text-color);') #{message}
+			if error
+				li(style='padding: 10px 0; color: var(--text-color);') #{error}
+			if messages
+				each msg in messages
+					li(style='padding: 10px 0; color: var(--text-color);') #{msg}
+			if errors
+				each error in errors
+					li(style='padding: 10px 0; color: var(--text-color);') #{error}
+		if link
+			div
+				a.button(href=link.href target='_blank') #{link.text}
+		if redirect
+			p(style='margin-top: 20px; color: var(--text-color-muted);') #{__('You will be redirected shortly.')} #[a(href=redirect) #{__('Click here if you are not redirected automatically.')}]

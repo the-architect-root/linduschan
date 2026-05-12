@@ -1,0 +1,8 @@
+#catalog-viewer-panel.collapsed
+  .panel-header
+    .panel-tabs
+      button.tab.active(data-mode='board') #{__('Board')}
+      button.tab(data-mode='all') #{__('All')}
+    button.close-btn(title=__('Close')) ×
+  #catalog-viewer-content
+    .cv-loading #{__('Loading...')}

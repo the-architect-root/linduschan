@@ -1,0 +1,70 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title #{__('Blog Settings')} - #{blog.title}
+
+block content
+	+boardheader(__('Blog Settings'))
+	.blog-container
+		.blog-nav
+			a(href=`/${board._id}/blog/${blog._id}.html`) &larr; #{__('View Blog')}
+			a(href=`/${board._id}/blog/${blog._id}/dashboard.html`) #{__('Dashboard')}
+		hr(size=1)
+		.blog-form-container
+			h1.blog-form-title #{__('Blog Settings')}: #{blog.title}
+			if saved
+				.success-message #{__('Settings saved!')}
+			if error === 'invalidcode'
+				.error-message #{__('Invalid edit code')}
+			form(action=`/forms/board/${board._id}/blog/settings` method='POST')
+				input(type='hidden' name='_csrf' value=csrf)
+				input(type='hidden' name='blog_id' value=blog._id)
+				.row
+					.label #{__('Title')}
+					input(type='text' name='title' value=blog.title maxlength='100' required)
+				.row
+					.label #{__('Tagline')}
+					input(type='text' name='tagline' value=blog.tagline || '' maxlength='200')
+				.row
+					.label #{__('Description')}
+					textarea(name='description' rows='3' required)= blog.description
+				.row
+					.label #{__('URL Slug')}
+					input(type='text' name='slug' value=blog.slug || '' maxlength='100' pattern='[a-z0-9-]+')
+					small.blog-help #{__('Only lowercase letters, numbers, and hyphens')}
+				.row
+					.label #{__('Theme')}
+					select(name='theme')
+						option(value='' selected=!blog.theme) #{__('Default')}
+						option(value='light' selected=blog.theme==='light') #{__('Light')}
+						option(value='dark' selected=blog.theme==='dark') #{__('Dark')}
+						option(value='sepia' selected=blog.theme==='sepia') #{__('Sepia')}
+				.row
+					.label #{__('Custom CSS')}
+					textarea(name='customCSS' rows='6')= blog.customCSS || ''
+				hr(size=1)
+				h3 #{__('Comment Settings')}
+				.row
+					label.checkbox-label
+						input(type='checkbox' name='allowComments' value='true' checked=blog.settings.allowComments !== false)
+						| #{__('Allow comments')}
+				.row
+					label.checkbox-label
+						input(type='checkbox' name='commentModeration' value='true' checked=blog.settings.commentModeration === true)
+						| #{__('Moderate comments (approve before showing)')}
+				.row
+					label.checkbox-label
+						input(type='checkbox' name='displayAuthor' value='true' checked=blog.settings.displayAuthor !== false)
+						| #{__('Display author name')}
+				.row
+					.label #{__('Entries per page')}
+					input(type='number' name='entriesPerPage' value=blog.settings.entriesPerPage || 10 min='1' max='50')
+				hr(size=1)
+				.row
+					.label #{__('Edit Code')} *
+					input(type='password' name='editCode' placeholder='Enter your edit code to save changes' required)
+				.row
+					input(type='submit' value=__('Save Settings'))
+					a.ml-5(href=`/${board._id}/blog/${blog._id}/dashboard.html`) #{__('Cancel')}
+	hr(size=1)

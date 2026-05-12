@@ -35,7 +35,8 @@ module.exports = {
 	deleteFilterController: require(__dirname+'/deletefilter.js'),
 	globalSettingsController: require(__dirname+'/globalsettings.js'),
 	globalClearController: require(__dirname+'/globalclear.js'),
-	createBoardController: require(__dirname+'/create.js'),
+	featureThreadController: require(__dirname+'/featurethread.js'),
+	unfeatureThreadController: require(__dirname+'/unfeaturethread.js'),
 	makePostController: require(__dirname+'/makepost.js'),
 	editPostController: require(__dirname+'/editpost.js'),
 	addStaffController: require(__dirname+'/addstaff.js'),
@@ -48,5 +49,6 @@ module.exports = {
 	newCaptchaForm: require(__dirname+'/../../models/forms/newcaptcha.js'),
 	blockBypassForm: require(__dirname+'/../../models/forms/blockbypass.js'),
 	logoutForm: require(__dirname+'/../../models/forms/logout.js'),
+	blogController: require(__dirname+'/blog.js'),
 
 };

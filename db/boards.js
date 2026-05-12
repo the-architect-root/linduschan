@@ -33,6 +33,22 @@ module.exports = {
 		return board;
 	},
 
+	// Get all board URIs for navbar
+	getAllUris: async () => {
+		let boardUris = await cache.get('boards:all:uris');
+		if (boardUris) {
+			return boardUris;
+		}
+		const boards = await db.find({}, {
+			'projection': {
+				'_id': 1,
+			}
+		}).toArray();
+		boardUris = boards.map(b => b._id);
+		await cache.set('boards:all:uris', boardUris, 300);
+		return boardUris;
+	},
+
 	getStaffPerms: async (boards, username) => {
 		return db.find({
 			'_id': {
@@ -505,28 +521,36 @@ module.exports = {
 	},
 
 	getNextId: async (board, saged, amount=1) => {
-		const update = {
-			'$inc': {
-				'sequence_value': amount
-			},
-		};
-		if (!saged) {
-			update['$set'] = {
-				'lastPostTimestamp': new Date()
-			};
-		}
-		const increment = await db.findOneAndUpdate(
-			{
-				'_id': board
-			},
-			update,
-			{
-				'projection': {
-					'sequence_value': 1
-				}
-			}
+		// First, ensure sequence_value is at least as high as the highest post ID
+		const highestPostId = await Mongo.db.collection('posts').findOne(
+			{ board: board },
+			{ sort: { postId: -1 }, projection: { postId: 1 } }
 		);
-		return increment.value.sequence_value + amount;
+		if (highestPostId && highestPostId.postId) {
+			const currentBoard = await db.findOne({ '_id': board }, { projection: { sequence_value: 1 } });
+			if (currentBoard && currentBoard.sequence_value < highestPostId.postId) {
+				await db.updateOne(
+					{ '_id': board },
+					{ '$set': { sequence_value: highestPostId.postId } }
+				);
+			}
+		}
+
+		const increment = await db.findOneAndUpdate(
+			{ '_id': board },
+			{ '$inc': { 'sequence_value': amount } },
+			{ 'projection': { 'sequence_value': 1 } }
+		);
+
+		if (!saged) {
+			await db.updateOne(
+				{ '_id': board },
+				{ '$set': { 'lastPostTimestamp': new Date() } }
+			);
+		}
+
+		// Return the first ID in the reserved range to prevent overlap with next allocation
+		return increment.value.sequence_value + 1;
 	},
 
 	recalculateLastPostTimestamp: async (board) => {

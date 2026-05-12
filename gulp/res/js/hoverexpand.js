@@ -90,7 +90,7 @@ const handleMouseOver = async (event) => {
 	const thumbElement = event.currentTarget.querySelector('.file-thumb');
 	if (thumbElement //if its already expanded, or is spoilered, don't allow hover
         && (thumbElement.style.display === 'none'
-            || thumbElement.classList.contains('spoilerimg'))) { return; }
+            || thumbElement.closest('.spoiler-container'))) { return; }
 	const mediaType = event.currentTarget.dataset.type;
 	const mediaLink = event.currentTarget.querySelector('a').href;
 

@@ -1,0 +1,33 @@
+extends ../layout.pug
+include ../mixins/catalogtile.pug
+include ../mixins/announcements.pug
+
+block head
+	title #{__('My Threads')}
+
+block content
+	p.section-title.flex-center #{__('My Threads')}
+	p.description.flex-center #{__('Threads you have created')}
+	br
+	+announcements()
+	include ../includes/stickynav.pug
+	.wrapbar
+		.pages
+			input#catalogfilter(type='text' placeholder=__('Filter'))
+			select.ml-5.right#catalogsort
+				option(value="" disabled selected hidden) #{__('Sort By')}
+				option(value="bump") #{__('Bump Order')}
+				option(value="date") #{__('Creation Date')}
+				option(value="replies") #{__('Reply Count')}
+		.pages.jsonly
+			a.button(href='/activethreads.html') #{__('Active Threads')}
+			|  
+			a.button(href='/mythreads.html') #{__('My Threads')}
+	hr(size=1)
+	if threads.length === 0
+		p #{__('No threads created. Create a thread to see it here!')}
+	else 
+		.catalog
+			for thread, i in threads
+				+catalogtile(thread, i+1)
+	hr(size=1)

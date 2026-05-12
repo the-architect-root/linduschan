@@ -10,7 +10,6 @@ module.exports = {
 	myPermissions: require(__dirname+'/mypermissions.js'),
 	home: require(__dirname+'/home.js'),
 	login: require(__dirname+'/login.js'),
-	create: require(__dirname+'/create.js'),
 	board: require(__dirname+'/board.js'),
 	catalog: require(__dirname+'/catalog.js'),
 	banners: require(__dirname+'/banners.js'),
@@ -30,4 +29,9 @@ module.exports = {
 	blockedBoards: require(__dirname+'/blockedboards.js'),
 	overboard: require(__dirname+'/overboard.js'),
 	overboardCatalog: require(__dirname+'/overboardcatalog.js'),
+	activethreads: require(__dirname+'/activethreads.js'),
+	mythreads: require(__dirname+'/mythreads.js'),
+	featuredthreads: require(__dirname+'/featuredthreads.js'),
+	journals: require(__dirname+'/journals.js'),
+	catalogviewer: require(__dirname+'/catalogviewer.js'),
 };

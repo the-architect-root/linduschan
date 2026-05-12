@@ -117,7 +117,7 @@ window.addEventListener('settingsReady', function() { //after domcontentloaded
 
 	newPost = (data, options = {}) => {
 		//insert at end of thread, but insert at top for globalmanage
-		//console.log('got new post', data);
+		console.log('got new post', data);
 		const postData = data;
 		lastPostIds[postData.board] = Math.max(lastPostIds[postData.board] || 0, postData.postId);
 		//create a new post

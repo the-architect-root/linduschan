@@ -100,7 +100,7 @@ todo: handle some more situations
 			}
 		}, {
 			'$push': {
-				'backlinks': { _id: post._id, postId: post.postId }
+				'backlinks': { _id: post._id, postId: post.postId, board: post.board }
 			}
 		});
 	}

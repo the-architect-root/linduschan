@@ -24,8 +24,10 @@ mixin globalmanagenav(selected, upLevel)
 			a(href=`${upLevel ? '../' : ''}news.html` class=(selected === 'news' ? 'bold' : '')) [#{__('News')}]
 		if permissions.get(Permissions.MANAGE_GLOBAL_SETTINGS)
 			|  
+			a(href=`${upLevel ? '../' : ''}featuredthreads.html` class=(selected === 'featuredthreads' ? 'bold' : '')) [Featured Threads]
+		if permissions.get(Permissions.MANAGE_GLOBAL_SETTINGS)
+			|  
 			a(href=`${upLevel ? '../' : ''}filters.html` class=(selected === 'filters' ? 'bold' : '')) [#{__('Filters')}]
 		if permissions.get(Permissions.MANAGE_GLOBAL_SETTINGS)
 			|  
 			a(href=`${upLevel ? '../' : ''}settings.html` class=(selected === 'settings' ? 'bold' : '')) [#{__('Settings')}]
-

@@ -1,0 +1,59 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title /#{board._id}/ - #{__('Imageboard')}
+
+block content
+	+boardheader(__('Imageboard'))
+	.blog-feed-controls
+		button.btn(onclick='toggleBlogForm()' style='background:var(--board-title);color:#fff;border-color:var(--board-title)') [ #{__('new blog')} ]
+		span.blog-feed-count #{blogs ? blogs.length : 0} #{__('blogs')}
+
+	.blog-post-form-wrap#blogPostForm
+		form.blog-post-form(action=`/forms/board/${board._id}/blog` method='POST' enctype='multipart/form-data')
+			.form-row
+				label #{__('SUBJECT')}
+				input(type='text' name='title' placeholder=__('Blog subject\u2026') maxlength='100' required)
+			.form-row.full
+				label #{__('COMMENT')}
+				textarea(name='description' placeholder=__('Say something\u2026') rows='4' required)
+			.form-row.full
+				label #{__('EDIT CODE')}
+				input(type='password' name='editCode' placeholder=__('Set a password to manage this blog') required)
+			.form-actions
+				input.btn.btn-primary(type='submit' value=__('post'))
+				span.file-label(onclick='document.getElementById("coverPick").click()') #{__('attach image')}
+				input#coverPick(type='file' name='cover' accept='image/*' style='display:none')
+				span#coverUploadList(style='display:none')
+				span(style='color:var(--font-color);opacity:0.5;font-size:10px;margin-left:auto') max 4 MB \u00B7 jpg png gif webp
+			#coverCropWrap(style='display:none;grid-column:1/-1;margin-top:4px')
+				#coverPreview(style='width:100%;aspect-ratio:1;overflow:hidden;background:var(--post-color);position:relative')
+					img#coverPreviewImg(style='width:100%;height:100%;object-fit:cover;display:block')
+				label(style='font-size:10px;color:var(--font-color);margin-top:4px;display:flex;align-items:center;gap:6px')
+					| #{__('Crop position')}:
+					input#cropSlider(type='range' min='0' max='100' value='50' style='flex:1')
+					input#cropY(type='hidden' name='cropY' value='50')
+
+	if blogs && blogs.length > 0
+		.blog-card-grid
+			each blog in blogs
+				a.blog-card(href=`/${board._id}/blog/${blog._id}.html`)
+					- const firstEntry = blog.entries && blog.entries.length > 0 ? blog.entries[0] : null;
+					- const firstMedia = firstEntry && firstEntry.contentMedia && firstEntry.contentMedia.length > 0 ? firstEntry.contentMedia[0] : null;
+					if blog.coverImage
+						img.blog-card-img(src=`/file/${blog.coverImage}` alt='')
+					else if firstMedia && firstMedia.filename
+						img.blog-card-img(src=`/file/${firstMedia.filename}` alt='')
+					else
+						.blog-card-img-placeholder
+							span.blog-card-initial= blog.title ? blog.title.charAt(0).toUpperCase() : 'B'
+					.blog-card-meta
+						span.blog-card-replies E:#{blog.entries ? blog.entries.length : 0} &nbsp; R:#{blog.replies ? blog.replies.length : 0}
+					.blog-card-title= blog.title
+					.blog-card-desc= blog.description
+					.blog-card-footer
+						span(style='margin-left:auto') #{blog.date.toLocaleString(pageLanguage, { day:'numeric', month:'short' })}
+	else
+		.blog-no-blogs
+			p #{__('No blogs yet. Be the first to create one!')}

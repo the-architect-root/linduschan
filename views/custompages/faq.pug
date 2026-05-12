@@ -24,12 +24,11 @@ block content
 						li: a(href='#name-formatting') How do names, tripcodes and capcodes work?
 						li: a(href='#post-styling') What kind of styling options are available when making a post?
 						li: a(href='#post-info') What is the file size limit?
-					b Boards, users & permissions
-					ul.mv-0
-						li: a(href='#make-a-board') How do I make my own board?
-						li: a(href='#antispam') What do the board settings for antispam do?
-						li: a(href='#archive-reverse-url-format') What is the archive/reverse image search link url format?
-						li: a(href='#twofactor-enforcement') How does 2FA enforcement work?
+				b Boards, users & permissions
+				ul.mv-0
+					li: a(href='#antispam') What do the board settings for antispam do?
+					li: a(href='#archive-reverse-url-format') What is the archive/reverse image search link url format?
+					li: a(href='#twofactor-enforcement') How does 2FA enforcement work?
 	.table-container.flex-center.mv-5
 		.anchor#whats-an-imageboard
 		table
@@ -202,6 +201,31 @@ block content
 						| ∧＿∧
 						| ( ・ω・) Let's try that again.
 			tr
+				td
+					pre
+						| [poll]
+						| What is your favorite color?
+						| Red
+						| Blue
+						| Green
+						| [/poll]
+						div
+							small (requires permission)
+				td
+					.post-poll
+						h4 What is your favorite color?
+						.poll-options
+							label.poll-option
+								input(type='radio' name='poll-example' value='0')
+								span Red
+							label.poll-option
+								input(type='radio' name='poll-example' value='1')
+								span Blue
+							label.poll-option
+								input(type='radio' name='poll-example' value='2')
+								span Green
+						button.poll-vote-btn Vote
+			tr
 				td(colspan=2)
 					| Supported languages for code block syntax highlighting: 
 					a(rel='nofollow' referrerpolicy='same-origin' target='_blank' href='https://github.com/highlightjs/highlight.js/blob/master/SUPPORTED_LANGUAGES.md') https://github.com/highlightjs/highlight.js/blob/master/SUPPORTED_LANGUAGES.md
@@ -209,6 +233,9 @@ block content
 					| If you do not specify a language, a subset of languages is supported for auto-detection: #{codeLanguages.join(', ')}. 
 					| If the language is "plain", an unsupported value, or the auto-detect confidence is too low, highlighting is disabled for the code block. 
 					| If the language is "aa", the font will be adjusted for Japanese Shift JIS art.
+					p
+					b Polls
+					|  allow you to create interactive voting in posts. The first line is the question, followed by options on separate lines. Each IP can vote once per poll.
 	.table-container.flex-center.mv-5
 		.anchor#post-info
 		table
@@ -240,18 +267,6 @@ block content
 						| Some moderation interfaces, for example the ban duration when moderating posts, or the ban duration for post filtering use a shorthand for times/length. This format supports years, months, weeks, days, hours, minutes and seconds.
 						| An input of "3mo" would mean 3 months and "1y2mo3w4d5h6m7s" would mean 1 year, 2 months, 3 weeks, 4 days, 5 hours, 6 minutes and 7 seconds. Units of time should be in descending order, so "2w1mo" is invalid.
 						| However you may use "6w" for example to input 6 weeks, and are not required to use "1mo2w".
-	.table-container.flex-center.mv-5
-		.anchor#make-a-board
-		table
-			tr
-				th: a(href='#make-a-board') How do I make my own board?
-			tr
-				td
-					p
-						a(href='/register.html') Register
-						|  an account, then 
-						a(href='/create.html') create a board
-						|. Please avoid making excessive amounts of boards, duplicate or boards similar to an existing one unless you expect that many users will migrate to the new board for whatever reason e.g. tyrannical moderation.
 	.table-container.flex-center.mv-5
 		.anchor#antispam
 		table
@@ -315,4 +330,4 @@ block content
 				th: a(href='#contact') How can I contact the administration?
 			tr
 				td
-					p Example						
+					p Contact me at wewuzindus@horsefucker.org						

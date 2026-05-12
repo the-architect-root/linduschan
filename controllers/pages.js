@@ -23,9 +23,8 @@ const express  = require('express')
 		manageBoard, manageThread, manageLogs, manageCatalog, manageCustomPages, manageStaff, editStaff, editPost } = require(__dirname+'/../models/pages/manage/')
 	, { globalManageSettings, globalManageReports, globalManageBans, globalManageBoards, globalManageFilters, globalEditFilter, editNews, editAccount, editRole,
 		globalManageRecent, globalManageAccounts, globalManageNews, globalManageLogs, globalManageRoles } = require(__dirname+'/../models/pages/globalmanage/')
-	, { changePassword, blockBypass, home, register, login, create, myPermissions, sessions, setupTwoFactor,
-		board, catalog, banners, boardSettings, globalSettings, randombanner, news, captchaPage, overboard, overboardCatalog,
-		captcha, thread, modlog, modloglist, account, boardlist, customPage, csrfPage, noncePage, blockedBoards } = require(__dirname+'/../models/pages/')
+	, { changePassword, blockBypass, register, account, sessions, setupTwoFactor, myPermissions, home, login, board, catalog, banners, boardSettings, globalSettings, customPage, csrfPage, noncePage, randombanner, news, captchaPage, captcha, thread, modlog, modloglist, boardlist, blockedBoards, overboard, overboardCatalog, featuredthreads, journals, catalogviewer } = require(__dirname+'/../models/pages/index.js')
+	, blogModel = require(__dirname+'/../models/pages/blog.js')
 	, threadParamConverter = paramConverter({ processThreadIdParam: true })
 	, logParamConverter = paramConverter({ processDateParam: true })
 	, filterParamConverter = paramConverter({ objectIdParams: ['filterid'] })
@@ -40,12 +39,19 @@ router.get('/index.html', home);
 //news page
 router.get('/news.html', news);
 
+//middleware to set lain theme for specific pages
+const setLainTheme = (req, res, next) => {
+	res.locals.defaultTheme = 'yotsuba';
+	next();
+};
+
 //board list
-router.get('/boards.(html|json)', boardlist);
+router.get('/boards.(html|json)', (req, res) => res.redirect('/'));
 
 //overboard
-router.get('/overboard.(html|json)', overboard); //overboard
-router.get('/catalog.(html|json)', overboardCatalog); //overboard catalog view
+router.get('/overboard.(html|json)', setLainTheme, overboard); //overboard
+router.get('/catalog.(html|json)', setLainTheme, overboardCatalog); //overboard catalog view
+router.get('/overboard/catalog.(html|json)', setLainTheme, overboardCatalog); //overboard catalog view (alternative path)
 
 //board pages
 router.get('/:board/index.html', Boards.exists, setBoardLanguage, blockedBoard, board); //index
@@ -118,6 +124,8 @@ router.get('/globalmanage/filters.html', useSession, sessionRefresh, isLoggedIn,
 	hasPerms.one(Permissions.MANAGE_GLOBAL_SETTINGS), csrf, globalManageFilters);
 router.get('/globalmanage/settings.html', useSession, sessionRefresh, isLoggedIn, calcPerms,
 	hasPerms.one(Permissions.MANAGE_GLOBAL_SETTINGS), csrf, globalManageSettings);
+router.get('/globalmanage/featuredthreads.html', useSession, sessionRefresh, isLoggedIn, calcPerms,
+	hasPerms.one(Permissions.MANAGE_GLOBAL_SETTINGS), csrf, featuredthreads);
 router.get('/globalmanage/editnews/:newsid([a-f0-9]{24}).html', useSession, sessionRefresh, isLoggedIn, calcPerms,
 	hasPerms.one(Permissions.MANAGE_GLOBAL_NEWS), csrf, newsParamConverter, editNews);
 router.get('/globalmanage/editfilter/:filterid([a-f0-9]{24}).html', useSession, sessionRefresh, isLoggedIn, calcPerms,
@@ -134,17 +142,110 @@ router.get('/bypass.html', useSession, csrf, blockBypass); //block bypass page
 router.get('/bypass_minimal.html', setMinimal, setQueryLanguage, useSession, csrf, blockBypass); //block bypass page
 
 //accounts
-router.get('/account.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, account);
+router.get('/account.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, setLainTheme, account);
 router.get('/mypermissions.html', useSession, sessionRefresh, isLoggedIn, calcPerms, myPermissions);
 router.get('/twofactor.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, setupTwoFactor);
 router.get('/sessions.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, sessions);
 router.get('/blockedboards.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, blockedBoards);
+
 router.get('/nonce/:address([a-zA-Z0-9]{42}).json', noncePage); //nonce for web3 logins
 router.get('/login.html', login);
 router.get('/register.html', register);
 router.get('/changepassword.html', changePassword);
-router.get('/create.html', useSession, sessionRefresh, isLoggedIn, create); //create new board
+router.get('/api/catalog-viewer.json', catalogviewer);
 router.get('/csrf.json', useSession, sessionRefresh, isLoggedIn, csrf, csrfPage); //just the token, for 3rd party stuff posting
+
+//public journals (viewable by everyone)
+router.get('/journals.html', useSession, sessionRefresh, csrf, journals.journalsFeed);
+router.get('/journals/:slug([a-z0-9-]+).html', useSession, sessionRefresh, csrf, journals.journalEntry);
+router.post('/journals/:slug([a-z0-9-]+)/vote.html', useSession, sessionRefresh, csrf, journals.journalVote);
+//protected journal creation
+router.get('/journals/new.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, journals.journalCreate);
+router.post('/journals/new.html', useSession, sessionRefresh, isLoggedIn, calcPerms, csrf, journals.journalCreateSubmit);
+router.get('/journals/:slug([a-z0-9-]+)/edit.html', useSession, sessionRefresh, csrf, journals.journalEdit);
+router.post('/journals/:slug([a-z0-9-]+)/edit.html', useSession, sessionRefresh, csrf, journals.journalEditSubmit);
+
+const blogOnlyGen = (req, res, next) => {
+	if (req.params.board !== 'gen') {
+		return res.redirect(`/${req.params.board}/`);
+	}
+	next();
+};
+
+//blog dashboard model
+const blogDashboard = async (req, res, next) => {
+	const { board, blogId } = req.params;
+	try {
+		const Blogs = require(__dirname+'/../db/blogs.js');
+		let blog = await Blogs.get(board, blogId);
+		if (!blog) {
+			blog = await Blogs.getBySlug(board, blogId);
+		}
+		if (!blog) {
+			return res.status(404).render('message', {
+				title: 'Not found',
+				message: 'Blog not found',
+				redirect: `/${board}/blogs`,
+			});
+		}
+		res.locals.blog = blog;
+
+		// Paginate replies
+		const page = parseInt(req.query.page) || 1;
+		const limit = 20;
+		const totalReplies = blog.replies ? blog.replies.length : 0;
+		const totalPages = Math.ceil(totalReplies / limit) || 1;
+		const replies = blog.replies ? blog.replies.slice().reverse().slice((page - 1) * limit, page * limit) : [];
+		res.locals.replies = replies;
+		res.locals.replyPage = page;
+		res.locals.replyTotalPages = totalPages;
+
+		next();
+	} catch (err) {
+		console.error('Blog dashboard error:', err);
+		return res.status(500).render('message', {
+			title: 'Error',
+			message: 'Failed to load dashboard',
+			redirect: `/${board}/blogs`,
+		});
+	}
+};
+
+//blog routes (only for /gen/ board)
+router.get('/:board/blogs.html', blogOnlyGen, Boards.exists, setBoardLanguage, blockedBoard, blogModel.list, (req, res) => res.render('blog-list', {
+	board: res.locals.board,
+	blogs: res.locals.blogs,
+}));
+router.get('/:board/blog/create.html', blogOnlyGen, (req, res) => res.redirect(`/${req.params.board}/blogs.html`));
+router.get('/:board/blog/:blogId/edit.html', blogOnlyGen, Boards.exists, setBoardLanguage, blockedBoard, blogModel.view, (req, res) => res.render('blog-edit', {
+	board: res.locals.board,
+	blog: res.locals.blog,
+}));
+router.get('/:board/blog/:blogId.html', blogOnlyGen, Boards.exists, setBoardLanguage, blockedBoard, blogModel.view, (req, res) => res.render('blog-view', {
+	board: res.locals.board,
+	blog: res.locals.blog,
+	activeTab: req.query.tab || 'blog',
+}));
+router.get('/:board/blog/:blogId/dashboard.html', blogOnlyGen, Boards.exists, setBoardLanguage, blockedBoard, blogDashboard, (req, res) => res.render('blog-dashboard', {
+	board: res.locals.board,
+	blog: res.locals.blog,
+	replies: res.locals.replies,
+	replyPage: res.locals.replyPage,
+	replyTotalPages: res.locals.replyTotalPages,
+	error: req.query.error,
+	saved: req.query.saved,
+}));
+router.get('/:board/blog/:blogId/settings.html', blogOnlyGen, Boards.exists, setBoardLanguage, blockedBoard, blogModel.view, (req, res) => res.render('blog-settings', {
+	board: res.locals.board,
+	blog: res.locals.blog,
+	saved: req.query.saved,
+	error: req.query.error,
+}));
+router.get('/:board/blog/:blogId/entry/:entryId/edit.html', blogOnlyGen, Boards.exists, setBoardLanguage, blockedBoard, blogModel.view, (req, res) => res.render('blog-entry-edit', {
+	board: res.locals.board,
+	blog: res.locals.blog,
+	entryId: req.params.entryId,
+}));
 
 //board default redirect - must come after specific routes
 router.get('/:board/', Boards.exists, (req, res) => res.redirect(`/${req.params.board}/catalog.html`)); //redirect to catalog by default

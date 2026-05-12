@@ -38,7 +38,9 @@ class CaptchaController {
 	}
 
 	setupCaptchaField(captcha) {
+		console.log('setupCaptchaField called, type:', captchaOptions.type, 'preload:', captcha.closest('form').dataset.captchaPreload);
 		if (captcha.closest('form').dataset.captchaPreload == 'true') {
+			console.log('Preloading captcha');
 			return this.loadCaptcha(captcha);
 		}
 		if (captchaOptions.type === 'grid' || captchaOptions.type === 'grid2') {
@@ -46,8 +48,23 @@ class CaptchaController {
 			//captcha.parentElement.previousSibling.previousSibling.tagName === 'SUMMARY' ? captcha.parentElement.previousSibling.previousSibling :  captcha.parentElement;
 			hoverListener.addEventListener('mouseover', () => this.loadCaptcha(captcha), { once: true });
 		} else { //captchaOptions.type === 'text'
-			captcha.placeholder = __('focus to load captcha');
-			captcha.addEventListener('focus', () => this.loadCaptcha(captcha), { once: true });
+			console.log('Setting up text captcha');
+			captcha.placeholder = __('loading...');
+
+			// Load captcha when post form is opened
+			const postForm = document.getElementById('postform');
+			if (postForm) {
+				postForm.addEventListener('opened', () => {
+					console.log('Post form opened, loading captcha');
+					this.loadCaptcha(captcha);
+				}, { once: true });
+			}
+
+			// Fallback: load on focus if form is already open or event doesn't fire
+			captcha.addEventListener('focus', () => {
+				console.log('Captcha field focused, calling loadCaptcha');
+				this.loadCaptcha(captcha);
+			}, { once: true });
 		}
 	}
 
@@ -61,26 +78,16 @@ class CaptchaController {
 			captchacheck.checked = false;
 		}
 		document.cookie = 'captchaid=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-		const xhr = new XMLHttpRequest();
-		xhr.onload = () => {
-			this.startRefreshTimer();
-			for (let captcha of this.captchaFields) {
-				const existingImage = captcha.previousSibling.children[0];
-				if (existingImage) {
-					captcha.previousSibling.children[0].src = xhr.responseURL;
-				} else {
-					this.loadCaptcha(captcha, xhr.responseURL);
-				}
-			}
-			this.refreshing = false;
-			e && e.target.classList.remove('spin');
-		};
-		xhr.onerror = () => {
-			this.refreshing = false;
-			e && e.target.classList.remove('spin');
-		};
-		xhr.open('GET', '/captcha', true);
-		xhr.send(null);
+		
+		// Clear existing and reload
+		for (let captcha of this.captchaFields) {
+			const captchaDiv = captcha.previousSibling;
+			captchaDiv.innerHTML = '';
+			this.loadCaptcha(captcha, '/captcha?v=' + Date.now());
+		}
+		this.startRefreshTimer();
+		this.refreshing = false;
+		e && e.target.classList.remove('spin');
 	}
 
 	removeCaptcha() {
@@ -102,31 +109,60 @@ class CaptchaController {
 		this.loadCaptcha(captchaField);
 	}
 
+	showCaptchaError(field, message) {
+		const captchaDiv = field.previousSibling;
+		captchaDiv.innerHTML = '';
+		captchaDiv.style.display = 'flex';
+		captchaDiv.style.alignItems = 'center';
+		captchaDiv.style.justifyContent = 'center';
+		captchaDiv.style.padding = '10px';
+		captchaDiv.style.backgroundColor = 'rgba(255,0,0,0.1)';
+		captchaDiv.style.borderRadius = '4px';
+		captchaDiv.style.minHeight = '60px';
+		captchaDiv.textContent = message;
+		if (captchaOptions.type === 'text') {
+			field.placeholder = __('Error - click ↻ to retry');
+		}
+	}
+
 	loadCaptcha(field, imgSrc = '/captcha') {
 		const captchaDiv = field.previousSibling;
-		if (captchaDiv.children.length > 0) {
+		console.log('loadCaptcha called, field:', field, 'captchaDiv:', captchaDiv);
+		if (!captchaDiv) {
+			console.error('No captcha div found!');
 			return;
 		}
+		console.log('captchaDiv children:', captchaDiv.children.length, 'innerHTML:', captchaDiv.innerHTML.substring(0, 100));
+		if (captchaDiv.children.length > 0) {
+			console.log('Already has children, returning');
+			return;
+		}
+		
 		const captchaImg = document.createElement('img');
 		const refreshDiv = document.createElement('div');
 		captchaDiv.style.display = '';
 		captchaImg.style.margin = '0 auto';
 		captchaImg.style.display = 'flex';
-		//captchaImg.style.width = '100%';
 		refreshDiv.classList.add('captcharefresh', 'noselect');
 		refreshDiv.addEventListener('click', (e) => this.refreshCaptchas(e), true);
 		refreshDiv.textContent = '↻';
 		if (captchaOptions.type === 'text') {
 			field.placeholder = __('loading');
 		}
+		console.log('Setting img src:', imgSrc);
 		captchaImg.src = imgSrc;
 		captchaImg.onload = () => {
+			console.log('Captcha loaded successfully');
 			if (captchaOptions.type === 'text') {
 				field.placeholder = __('Captcha text');
 			}
 			captchaDiv.appendChild(captchaImg);
 			captchaDiv.appendChild(refreshDiv);
 			this.startRefreshTimer();
+		};
+		captchaImg.onerror = (e) => {
+			console.log('Captcha failed to load:', e);
+			this.showCaptchaError(field, __('Error loading captcha - click ↻ to retry'));
 		};
 	}
 

@@ -1,0 +1,13 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title #{__('Dashboard')} - #{blog.title}
+
+block content
+	+boardheader(__('Dashboard'))
+	.blog-container
+		.blog-dashboard-redirect
+			p #{__('Blog management has moved to the new dashboard.')}
+			a(href=`/${board._id}/blog/${blog._id}/dashboard.html`) &rarr; #{__('Go to Dashboard')}
+	hr(size=1)

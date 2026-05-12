@@ -4,6 +4,7 @@ include ../mixins/filelabel.pug
 - const messageRequired = (!isThread && board.settings.forceThreadMessage) || (isThread && board.settings.forceReplyMessage);
 - const fileRequired = (!isThread && board.settings.forceThreadFile) || (isThread && board.settings.forceReplyFile);
 section.form-wrapper.flex-center
+	a.collapse.no-decoration.post-button(href='#postform') [#{isThread ? __('New Reply') : __('New Thread')}]
 	form.form-post#postform(action=`/forms/board/${board._id}/${modview ? 'mod' : ''}post`, enctype='multipart/form-data', method='POST' data-reset-on-submit='true')
 		if modview
 			input(type='hidden' name='_csrf' value=csrf)
@@ -27,6 +28,11 @@ section.form-wrapper.flex-center
 			- const minLength = (isThread ? board.settings.minReplyMessageLength : board.settings.minThreadMessageLength) || 0;
 			- const maxLength = Math.min((isThread ? board.settings.maxReplyMessageLength : board.settings.maxThreadMessageLength), globalLimits.fieldLength.message) || globalLimits.fieldLength.message;
 			textarea#message(name='message', rows='5', minlength=minLength maxlength=maxLength required=messageRequired)
+		if ((board.settings.captchaMode === 1 && !isThread) || board.settings.captchaMode === 2) && !modview
+			if captchaOptions.type === 'text'
+				include ./captchasidelabel.pug
+			else
+				include ./captchaexpand.pug
 		if board.settings.maxFiles > 0 && Object.values(board.settings.allowedFileTypes).some(x => x === true)
 			- const maxFiles = board.settings.maxFiles;
 			section.row
@@ -51,7 +57,7 @@ section.form-wrapper.flex-center
 		if board.settings.userPostSpoiler || board.settings.userPostDelete || board.settings.userPostUnlink || modview
 			section.row
 				.label Password
-				input(type='password', name='postpassword', placeholder='Password to delete/spoiler/unlink later' maxlength='50' autocomplete='new-password')
+				input(type='text', name='postpassword', placeholder='Password to delete/spoiler/unlink later' maxlength='50' autocomplete='off')
 		if isThread
 			section.row
 				.label
@@ -81,14 +87,4 @@ section.form-wrapper.flex-center
 				.label #{__('Web3')}
 				input.dummy-link.web3-sign(type='button' value=__('Sign') disabled=true)
 				textarea.ml-1.no-resize(name='signature', rows='1', autocomplete='off' readonly)
-		if ((board.settings.captchaMode === 1 && !isThread) || board.settings.captchaMode === 2) && !modview
-			if captchaOptions.type === 'text'
-				include ./captchasidelabel.pug
-			else
-				include ./captchaexpand.pug
 		input#submitpost(type='submit', value=(isThread ? __('New Reply') : __('New Thread')))
-		div#cooldown-timer.jsonly(style='display:none; margin-top:5px; font-weight:bold; color:#d00;')
-			span #{__('Wait')}: 
-			span#cooldown-seconds 5
-			span #{__('seconds to post again')}
-	a.collapse.no-decoration.post-button(href='#postform') [#{isThread ? __('New Reply') : __('New Thread')}]

@@ -35,11 +35,15 @@ window.addEventListener('DOMContentLoaded', () => {
 	};
 	if (postForm) {
 		const closeButton = postForm ? postForm.querySelector('.close') : null;
-		topPostButton.addEventListener('click', openPostForm, false);
+		if (topPostButton) {
+			topPostButton.addEventListener('click', openPostForm, false);
+		}
 		if (bottomPostButton) {
 			bottomPostButton.addEventListener('click', openPostForm, false);
 		}
-		closeButton.addEventListener('click', closePostForm, false);
+		if (closeButton) {
+			closeButton.addEventListener('click', closePostForm, false);
+		}
 	}
 
 	const addToMessageBox = (str) => {

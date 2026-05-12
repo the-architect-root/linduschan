@@ -100,12 +100,13 @@ module.exports = async (req, res) => {
 			cacheTime: numberSetting(req.body.dnsbl_cache_time, oldSettings.dnsbl.cacheTime),
 		},
 		disableAnonymizerFilePosting: booleanSetting(req.body.disable_anonymizer_file_posting, oldSettings.disableAnonymizerFilePosting),
-		statsCountAnonymizers: booleanSetting(req.body.stats_count_anonymizers, oldSettings.statsCountAnonymizers),
-		floodTimers: {
-			sameContentSameIp: numberSetting(req.body.flood_timers_same_content_same_ip, oldSettings.floodTimers.sameContentSameIp),
-			sameContentAnyIp: numberSetting(req.body.flood_timers_same_content_any_ip, oldSettings.floodTimers.sameContentAnyIp),
-			anyContentSameIp: numberSetting(req.body.flood_timers_any_content_same_ip, oldSettings.floodTimers.anyContentSameIp),
+		disableAnonymizerPosting: booleanSetting(req.body.disable_anonymizer_posting, oldSettings.disableAnonymizerPosting),
+		disableVpnPosting: booleanSetting(req.body.disable_vpn_posting, oldSettings.disableVpnPosting),
+		vpnBlock: {
+			enabled: oldSettings.disableVpnPosting || false,
+			apiKey: trimSetting(req.body.vpn_block_api_key, oldSettings.vpnBlock.apiKey),
 		},
+		statsCountAnonymizers: booleanSetting(req.body.stats_count_anonymizers, oldSettings.statsCountAnonymizers),
 		blockBypass: {
 			enabled: booleanSetting(req.body.block_bypass_enabled, oldSettings.blockBypass.enabled),
 			forceAnonymizers: booleanSetting(req.body.block_bypass_force_anonymizers, oldSettings.blockBypass.forceAnonymizers),

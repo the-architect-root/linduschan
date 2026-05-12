@@ -406,17 +406,6 @@ ul.tabs.group
 				.label #{__('Expire After Time')}
 				input(type='text' name='block_bypass_expire_after_time' placeholder=__('e.g. 1d') value=settings.blockBypass.expireAfterTime)
 			.row
-				h4.mv-5 #{__('Flood Protection')}
-			.row
-				.label #{__('Same Content Same IP/ID')}
-				input(type='number' name='flood_timers_same_content_same_ip' value=settings.floodTimers.sameContentSameIp)
-			.row
-				.label #{__('Same Content Any IP/ID')}
-				input(type='number' name='flood_timers_same_content_any_ip' value=settings.floodTimers.sameContentAnyIp)
-			.row
-				.label #{__('Any Content Same IP/ID')}
-				input(type='number' name='flood_timers_any_content_same_ip' value=settings.floodTimers.anyContentSameIp)
-			.row
 				h4.mv-5 #{__('DNSBL')}
 			.row
 				.label #{__('DNSBL Enabled')}
@@ -428,6 +417,19 @@ ul.tabs.group
 			.row
 				.label #{__('Cache Time')}
 				input(type='text' name='dnsbl_cache_time' placeholder=__('e.g. 1h') value=settings.dnsbl.cacheTime)
+			.row
+				h4.mv-5 #{__('Anonymizer & VPN Block')}
+			.row
+				.label #{__('Disable Anonymizer Posting')}
+				label.postform-style.ph-5
+					input(type='checkbox', name='disable_anonymizer_posting', value='true' checked=settings.disableAnonymizerPosting)
+			.row
+				.label #{__('Disable VPN Posting')}
+				label.postform-style.ph-5
+					input(type='checkbox', name='disable_vpn_posting', value='true' checked=settings.disableVpnPosting)
+			.row
+				.label #{__('IPHub API Key')}
+				input(type='text' name='vpn_block_api_key' placeholder=__('Required for VPN detection') value=settings.vpnBlock.apiKey)
 			.row
 				h4.mv-5 #{__('Ratelimits')}
 			.row

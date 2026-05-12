@@ -1,7 +1,7 @@
 'use strict';
 
 const uploadDirectory = require(__dirname+'/../../lib/file/uploaddirectory.js')
-	, { remove } = require('fs-extra')
+	, { remove, copy, ensureDir, pathExists } = require('fs-extra')
 	, { Posts } = require(__dirname+'/../../db/')
 	, Socketio = require(__dirname+'/../../lib/misc/socketio.js')
 	, { prepareMarkdown } = require(__dirname+'/../../lib/post/markdown/markdown.js')
@@ -117,6 +117,59 @@ module.exports = async (req, res) => {
 	let destinationThreadId = res.locals.destinationThread ? res.locals.destinationThread.postId : (crossBoard ? null : postIds[0])
 		, movedPosts = 0;
 	({ destinationThreadId, movedPosts } = await Posts.move(postMongoIds, crossBoard, destinationThreadId, destinationBoard));
+
+	// Copy files to destination board directory for cross-board moves
+	if (crossBoard) {
+		const sourceBoard = req.params.board;
+		for (const post of res.locals.posts) {
+			if (post.files && post.files.length > 0) {
+				for (const file of post.files) {
+					// Determine source file paths (check both new board-specific and old fallback paths)
+					const subfolder = file.mimetype && (file.mimetype.startsWith('video/') || file.mimetype.startsWith('audio/'))
+						? 'uploads/videos'
+						: 'uploads/images';
+					
+					const newSourceFilePath = `${uploadDirectory}/${sourceBoard}/${subfolder}/${file.filename}`;
+					const oldSourceFilePath = `${uploadDirectory}/${subfolder}/${file.filename}`;
+					
+					// Use whichever path exists
+					let sourceFilePath = null;
+					if (await pathExists(newSourceFilePath)) {
+						sourceFilePath = newSourceFilePath;
+					} else if (await pathExists(oldSourceFilePath)) {
+						sourceFilePath = oldSourceFilePath;
+					}
+
+					const newSourceThumbPath = file.hasThumb ? `${uploadDirectory}/${sourceBoard}/file/thumb/${file.hash}${file.thumbextension}` : null;
+					const oldSourceThumbPath = file.hasThumb ? `${uploadDirectory}/file/thumb/${file.hash}${file.thumbextension}` : null;
+					
+					let sourceThumbPath = null;
+					if (newSourceThumbPath && await pathExists(newSourceThumbPath)) {
+						sourceThumbPath = newSourceThumbPath;
+					} else if (oldSourceThumbPath && await pathExists(oldSourceThumbPath)) {
+						sourceThumbPath = oldSourceThumbPath;
+					}
+
+					// Determine destination file paths (always use new board-specific paths)
+					const destFileFolder = `${destinationBoard}/${subfolder}`;
+					const destFilePath = `${uploadDirectory}/${destFileFolder}/${file.filename}`;
+					const destThumbPath = file.hasThumb ? `${uploadDirectory}/${destinationBoard}/file/thumb/${file.hash}${file.thumbextension}` : null;
+
+					// Copy files if they exist
+					if (sourceFilePath) {
+						await ensureDir(`${uploadDirectory}/${destFileFolder}`);
+						await copy(sourceFilePath, destFilePath);
+						console.log(`Copied file from ${sourceFilePath} to ${destFilePath}`);
+					}
+					if (sourceThumbPath) {
+						await ensureDir(`${uploadDirectory}/${destinationBoard}/file/thumb`);
+						await copy(sourceThumbPath, destThumbPath);
+						console.log(`Copied thumb from ${sourceThumbPath} to ${destThumbPath}`);
+					}
+				}
+			}
+		}
+	}
 
 	//emit markPost moves
 	for (let i = 0; i < moveEmits.length; i++) {

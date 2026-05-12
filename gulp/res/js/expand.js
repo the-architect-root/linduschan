@@ -49,10 +49,16 @@ window.addEventListener('DOMContentLoaded', () => {
 	if (!isCatalog) { //dont expand on catalog
 		const thumbs = document.getElementsByClassName('post-file-src');
 		const toggle = function(thumb, expanded, filename, src) {
+			const spoilerImg = thumb.closest('.spoiler-container')?.querySelector('.spoilerimg');
 			if (thumb.style.display === 'none') { //closing
 				thumb.style.display = '';
 				expanded.style.display = 'none';
-				filename.style.maxWidth = '';
+				if (spoilerImg) {
+					spoilerImg.style.display = 'block'; // re-spoiler
+				}
+				if (filename) {
+					filename.style.maxWidth = '';
+				}
 				// Hide close button when closing
 				const closeButton = src.querySelector('.noselect');
 				if (closeButton) {
@@ -61,7 +67,10 @@ window.addEventListener('DOMContentLoaded', () => {
 			} else { //expanding
 				thumb.style.display = 'none';
 				expanded.style.display = '';
-				if (expanded.offsetWidth >= filename.offsetWidth) {
+				if (spoilerImg) {
+					spoilerImg.style.display = 'none'; // hide overlay
+				}
+				if (filename && expanded.offsetWidth >= filename.offsetWidth) {
 					filename.style.maxWidth = expanded.offsetWidth+'px';
 				}
 				// Show close button when expanding
@@ -95,15 +104,24 @@ window.addEventListener('DOMContentLoaded', () => {
 			if (this.dataset.attachment == 'true') {
 				return;
 			}
+			if (this.dataset.type === 'custom-video' || this.dataset.type === 'audio') {
+				return;
+			}
 			e.preventDefault();
-			const fileAnchor = this.firstChild;
-			const fileHref = fileAnchor.href;
+			const pfs = this.closest('.post-file-src') || this;
+			const fileAnchor = this.querySelector('a[href]');
+			const fileHref = fileAnchor ? fileAnchor.href : '';
 			const type = this.dataset.type;
-			const thumbElement = fileAnchor.firstChild;
-			const isSpoilered = thumbElement.classList.contains('spoilerimg');
+			const thumbElement = this.querySelector('.file-thumb');
+			if (!thumbElement) return;
+			const isSpoilered = thumbElement.closest('.spoiler-container') !== null;
 			const fileName = this.previousSibling;
-			const pfs = this.closest('.post-file-src');
-			let expandedElement = type === 'image' ? thumbElement.nextSibling : fileAnchor.nextSibling;
+			let expandedElement;
+			if (isSpoilered) {
+				expandedElement = type === 'image' ? pfs.querySelector('.expanded-image') : (fileAnchor ? fileAnchor.nextSibling : null);
+			} else {
+				expandedElement = type === 'image' ? thumbElement.nextSibling : (fileAnchor ? fileAnchor.nextSibling : thumbElement.nextSibling);
+			}
 
 			if (expandedElement) {
 				toggle(thumbElement, expandedElement, fileName, pfs);
@@ -119,11 +137,12 @@ window.addEventListener('DOMContentLoaded', () => {
 						thumbElement.style.opacity = '0.5';
 						thumbElement.style.cursor = 'wait';
 						expandedElement = document.createElement('img');
+						expandedElement.classList.add('expanded-image');
 						source = expandedElement;
 						source.onload = function() {
 							thumbElement.style.opacity = '';
 							thumbElement.style.cursor = '';
-							fileAnchor.appendChild(expandedElement);
+							pfs.appendChild(expandedElement);
 							toggle(thumbElement, expandedElement, fileName, pfs);
 						};
 						source.src = fileHref;

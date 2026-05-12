@@ -16,5 +16,8 @@ module.exports = {
 	Ratelimits: require(__dirname+'/ratelimits.js'),
 	Modlogs: require(__dirname+'/modlogs.js'),
 	Bypass: require(__dirname+'/bypass.js'),
+	Journals: require(__dirname+'/journals.js'),
+	HashBans: require(__dirname+'/hashbans.js'),
+	Blogs: require(__dirname+'/blogs.js'),
 
 };

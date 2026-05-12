@@ -17,7 +17,7 @@ details.toggle-label#actionform
 				| #{__('Spoiler Files')}
 		if board.settings.userPostSpoiler || board.settings.userPostUnlink || board.settings.userPostDelete
 			label
-				input#password(type='password', name='postpassword', placeholder=__('Password') autocomplete='off')
+				input#password(type='text', name='postpassword', placeholder=__('Password') autocomplete='off')
 		label
 			input.post-check(type='checkbox', name='report' value='1')
 			| #{__('Report')}

@@ -6,7 +6,10 @@ module.exports = async (req, res, next) => {
 
 	let html, json;
 	try {
-		({ html, json } = await buildCatalog({ board: res.locals.board }));
+		({ html, json } = await buildCatalog({
+			board: res.locals.board,
+			myPostIds: res.locals.myPostIds
+		}));
 	} catch (err) {
 		return next(err);
 	}

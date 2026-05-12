@@ -14,6 +14,7 @@ const { createHash, randomBytes } = require('crypto')
 	, filterActions = require(__dirname+'/../../lib/post/filteractions.js')
 	, { prepareMarkdown } = require(__dirname+'/../../lib/post/markdown/markdown.js')
 	, messageHandler = require(__dirname+'/../../lib/post/message.js')
+	, { Permissions } = require(__dirname+'/../../lib/permission/permissions.js')
 	, moveUpload = require(__dirname+'/../../lib/file/moveupload.js')
 	, mimeTypes = require(__dirname+'/../../lib/file/mimetypes.js')
 	, imageThumbnail = require(__dirname+'/../../lib/file/image/imagethumbnail.js')
@@ -27,9 +28,7 @@ const { createHash, randomBytes } = require('crypto')
 	, deleteTempFiles = require(__dirname+'/../../lib/file/deletetempfiles.js')
 	, fixGifs = require(__dirname+'/../../lib/file/image/fixgifs.js')
 	, timeUtils = require(__dirname+'/../../lib/converter/timeutils.js')
-	, { Permissions } = require(__dirname+'/../../lib/permission/permissions.js')
 	, deletePosts = require(__dirname+'/deletepost.js')
-	, spamCheck = require(__dirname+'/../../lib/middleware/misc/spamcheck.js')
 	, config = require(__dirname+'/../../lib/misc/config.js')
 	, buildQueue = require(__dirname+'/../../lib/build/queue.js')
 	, dynamicResponse = require(__dirname+'/../../lib/misc/dynamic.js')
@@ -50,17 +49,6 @@ module.exports = async (req, res) => {
 	const { __ } = res.locals;
 	const { checkRealMimeTypes, thumbSize, thumbExtension, videoThumbPercentage, audioThumbnails,
 		dontStoreRawIps, globalLimits } = config.get;
-
-	//spam/flood check
-	const flood = await spamCheck(req, res);
-	if (flood) {
-		deleteTempFiles(req).catch(console.error);
-		return dynamicResponse(req, res, 429, 'message', {
-			'title': __('Flood detected'),
-			'message': __('Please wait before making another post, or a post similar to another user'),
-			'redirect': `/${req.params.board}${req.body.thread ? '/thread/' + req.body.thread + '.html' : ''}`
-		});
-	}
 
 	// check if this is responding to an existing thread
 	let redirect = `/${req.params.board}/`;
@@ -93,7 +81,7 @@ module.exports = async (req, res) => {
 	}
 	if (req.body.thread) {
 		thread = await Posts.getPost(req.params.board, req.body.thread, true);
-		if (!thread || thread.thread != null) {
+		if (!thread) {
 			await deleteTempFiles(req).catch(console.error);
 			return dynamicResponse(req, res, 400, 'message', {
 				'title': __('Bad request'),
@@ -181,6 +169,19 @@ module.exports = async (req, res) => {
 		}
 	}
 
+	// Strip all emojis from messages
+	if (req.body.message && req.body.message.length > 0) {
+		req.body.message = req.body.message.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim();
+		if (req.body.message.length === 0) {
+			await deleteTempFiles(req).catch(console.error);
+			return dynamicResponse(req, res, 400, 'message', {
+				'title': __('Bad request'),
+				'message': __('Emoji-only posts are not allowed.'),
+				'redirect': redirect
+			});
+		}
+	}
+
 	//for r9k messages. usually i wouldnt process these if its not enabled e.g. flags and IDs but in this case I think its necessary
 	let messageHash = null;
 	if (req.body.message && req.body.message.length > 0) {
@@ -260,11 +261,14 @@ module.exports = async (req, res) => {
 			file.filename = file.sha256 + file.extension;
 
 			//get metadata
+			// Handle spoiler and strip_filename - req.body values can be string (single) or array (multiple)
+			const spoilerHashes = req.body.spoiler ? (Array.isArray(req.body.spoiler) ? req.body.spoiler : [req.body.spoiler]) : [];
+			const stripHashes = req.body.strip_filename ? (Array.isArray(req.body.strip_filename) ? req.body.strip_filename : [req.body.strip_filename]) : [];
 			let processedFile = {
 				filename: file.filename,
-				spoiler: (!isStaffOrGlobal || userPostSpoiler) && req.body.spoiler && req.body.spoiler.includes(file.sha256),
+				spoiler: (!isStaffOrGlobal || userPostSpoiler) && spoilerHashes.includes(file.sha256),
 				hash: file.sha256,
-				originalFilename: req.body.strip_filename && req.body.strip_filename.includes(file.sha256) ? file.filename : file.name,
+				originalFilename: stripHashes.includes(file.sha256) ? file.filename : file.name,
 				mimetype: file.mimetype,
 				size: file.size,
 				extension: file.extension,
@@ -514,7 +518,26 @@ module.exports = async (req, res) => {
 		__ //i18n translation local
 	);
 	//get message, quotes and crossquote array
-	const nomarkup = prepareMarkdown(req.body.message, true);
+	let messageInput = req.body.message;
+	let poll = null;
+
+	// Parse and strip poll markup before processing
+	if (messageInput && res.locals.permissions.get(Permissions.USE_MARKDOWN_POLL)) {
+		const pollMatch = messageInput.match(/\[poll\]([\s\S]*?)\[\/poll\]/mi);
+		if (pollMatch) {
+			const lines = pollMatch[1].trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
+			if (lines.length >= 3) {
+				poll = {
+					question: lines[0],
+					options: lines.slice(1)
+				};
+				// Remove poll markup from message
+				messageInput = messageInput.replace(/\[poll\][\s\S]*?\[\/poll\]/mi, '').trim();
+			}
+		}
+	}
+
+	const nomarkup = prepareMarkdown(messageInput, true);
 	const { message, quotes, crossquotes } = await messageHandler(nomarkup, req.params.board, req.body.thread, res.locals.permissions);
 
 	//web3 sig
@@ -527,6 +550,7 @@ module.exports = async (req, res) => {
 
 	//build post data for db. for some reason all the property names are lower case :^)
 	const now = Date.now();
+
 	const data = {
 		'date': new Date(now),
 		'u': now,
@@ -549,12 +573,15 @@ module.exports = async (req, res) => {
 		'banmessage': null,
 		userId,
 		'ip': res.locals.ip,
+		'userSession': req.userSession, //for (You) feature
 		files,
 		'reports': [],
 		'globalreports': [],
 		quotes, //posts this post replies to
 		crossquotes, //quotes to other threads in same board
 		'backlinks': [], //posts replying to this post
+		poll,
+		pollVotes: []
 	};
 
 	if (!req.body.thread) {
@@ -699,16 +726,13 @@ module.exports = async (req, res) => {
 		'files': data.files,
 		'reports': [],
 		'globalreports': [],
-		'quotes': data.quotes,
-		'backlinks': [],
-		'replyposts': 0,
-		'replyfiles': 0,
-		'sticky': data.sticky,
-		'locked': data.locked,
-		'bumplocked': data.bumplocked,
-		'cyclic': data.cyclic,
+		'poll': poll,
+		'pollVotes': [],
 		'signature': data.signature,
 		'address': data.address,
+		'backlinks': [],
+		'previewbacklinks': [],
+		'replies': [],
 	};
 	if (data.thread) {
 		//dont emit thread to this socket, because the room only exists when the thread is open

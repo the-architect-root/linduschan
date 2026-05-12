@@ -1,0 +1,91 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title #{blog.title} - /#{board._id}/
+
+block content
+	+boardheader(blog.title)
+	.blog-nav
+		a.blog-back-link(href=`/${board._id}/blogs.html`) &larr; #{__('All Blogs')}
+		a.blog-back-link(href=`/${board._id}/`) #{__('Board')}
+		a.blog-back-link(href=`/${board._id}/blog/${blog._id}/dashboard.html` style='margin-left:auto') #{__('Dashboard')}
+
+	.blog-tabs
+		a.blog-tab(href=`/${board._id}/blog/${blog._id}.html?tab=blog` class=(activeTab === 'blog' || !activeTab ? 'active' : '')) #{__('Blog')}
+		a.blog-tab(href=`/${board._id}/blog/${blog._id}.html?tab=interact` class=(activeTab === 'interact' ? 'active' : '')) #{__('Interact')}
+
+	if activeTab === 'interact'
+		.blog-interact
+			h3 #{__('Discussion')}
+			if blog.replies && blog.replies.filter(r => !r.isDeleted).length > 0
+				.replies-list
+					each reply in blog.replies.filter(r => !r.isDeleted).slice().reverse()
+						.reply
+							.reply-date= new Date(reply.date).toLocaleString(pageLanguage, { hourCycle:'h23' })
+							pre.reply-message= reply.message
+			else
+				p.no-replies #{__('No replies yet.')}
+			if blog.settings.allowComments !== false
+				.reply-form-wrap
+					h3 #{__('Leave a Reply')}
+					form(action=`/forms/board/${board._id}/blog/reply` method='POST')
+						input(type='hidden' name='_csrf' value=csrf)
+						input(type='hidden' name='minimal' value='1')
+						input(type='hidden' name='blog_id' value=blog._id)
+						textarea.blog-reply-textarea(name='message' placeholder='Join the discussion...' rows='5' required)
+						if board.settings.captchaMode > 0
+							if captchaOptions.type === 'text'
+								include ../includes/captchasidelabel.pug
+							else
+								include ../includes/captchaexpand.pug
+						br
+						input.btn.btn-primary(type='submit' value=__('Post Reply'))
+	else
+		.blog-header
+			h1.blog-title= blog.title
+			.blog-meta
+				span= blog.date.toLocaleString(pageLanguage, { hourCycle:'h23' })
+				if blog.entries
+					span &middot;
+					span #{blog.entries.length} #{__('entries')}
+
+		if entries && entries.length > 0
+			.blog-entries
+				each entry in entries
+					article.blog-entry
+						.entry-date= new Date(entry.createdDate || entry.publishedDate).toLocaleString(pageLanguage, { hourCycle:'h23' })
+						if entry.title
+							h2.blog-entry-title= entry.title
+						.blog-body
+							if entry.contentMedia && entry.contentMedia.length > 0
+								.blog-media
+									each media in entry.contentMedia
+										if media.type === 'video' || media.mimetype && media.mimetype.startsWith('video/')
+											.blog-video-container
+												video.blog-media-player(controls preload='none' playsinline)
+													source(src=media.filename ? `/file/${media.filename}` : media.url)
+										else if media.type === 'audio' || media.mimetype && media.mimetype.startsWith('audio/')
+											audio.blog-media-item(controls preload='none')
+												source(src=media.filename ? `/file/${media.filename}` : media.url)
+										else if media.type === 'image' || media.mimetype && media.mimetype.startsWith('image/')
+											img.blog-media-item(src=media.filename ? `/file/${media.filename}` : media.url alt='Blog media')
+										else
+											a.blog-media-link(href=media.filename ? `/file/${media.filename}` : media.url target='_blank' rel='noopener noreferrer') #[span.blog-media-file] #{media.filename || media.url}
+							if entry.content
+								div.blog-text !{entry.content}
+						if entry.tags && entry.tags.length > 0
+							.blog-entry-tags
+								each tag in entry.tags
+									span.blog-tag= tag
+						if entry.editedDate
+							.blog-entry-edited #{__('Edited')}: #{entry.editedDate.toLocaleString(pageLanguage, { hourCycle:'h23' })}
+			if totalEntryPages > 1
+				.blog-pagination
+					each p in Array(totalEntryPages)
+						if p+1 === entryPage
+							span.page-btn.current= p+1
+						else
+							a.page-btn(href=`/${board._id}/blog/${blog._id}.html?page=${p+1}`)= p+1
+		else
+			p.blog-no-entries #{__('No entries yet.')}

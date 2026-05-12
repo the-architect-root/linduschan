@@ -3,63 +3,537 @@ include ../mixins/boardtable.pug
 
 block head
 	title Induschan
+	style.
+		.home-main-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 15px;
+			max-width: 1200px;
+			margin: 20px auto;
+			padding: 0 15px;
+		}
+		.home-section {
+			background: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)), var(--background-rest);
+			border: 1px solid rgba(128,128,128,0.3);
+			border-radius: 6px;
+			padding: 5px;
+		}
+		.home-section-header {
+			background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)), var(--label-color);
+			color: var(--font-color);
+			padding: 8px 15px;
+			font-size: 13px;
+			font-weight: bold;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			border-bottom: 1px solid rgba(128,128,128,0.3);
+			display: block;
+			text-decoration: none;
+			border-radius: 4px 4px 0 0;
+		}
+		.home-section-header:hover {
+			text-decoration: underline;
+			background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), var(--label-color);
+		}
+		.boards-section {
+			max-width: 1200px;
+			margin: 20px auto;
+			padding: 0 15px;
+		}
+		.boards-list {
+			background: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)), var(--background-rest);
+			border: 1px solid rgba(128,128,128,0.3);
+			border-top: none;
+			border-radius: 0 0 6px 6px;
+			padding: 5px;
+		}
+		.board-item {
+			padding: 10px 12px;
+			border-bottom: 1px solid rgba(128,128,128,0.2);
+			border-radius: 3px;
+			transition: background 0.2s;
+		}
+		.board-item:hover {
+			background: linear-gradient(rgba(0,0,0,0.05), rgba(0,0,0,0.05)), var(--background-rest);
+		}
+		.board-item:last-child {
+			border-bottom: none;
+		}
+		.board-name {
+			font-size: 15px;
+			font-weight: bold;
+		}
+		.board-name a {
+			color: var(--font-color);
+			text-decoration: none;
+			transition: color 0.2s;
+		}
+		.board-name a:hover {
+			text-decoration: underline;
+			color: var(--subject-color);
+		}
+		.board-desc {
+			margin-top: 6px;
+			font-size: 13px;
+			color: var(--quote-color);
+			opacity: 0.85;
+		}
+		.nsfw-tag {
+			display: inline-block;
+			background: #ff4444;
+			color: white;
+			font-size: 10px;
+			font-weight: bold;
+			padding: 2px 6px;
+			border-radius: 2px;
+			margin-left: 5px;
+			text-transform: uppercase;
+		}
+		.board-category {
+			margin-bottom: 15px;
+		}
+		.board-category-header {
+			background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)), var(--label-color);
+			color: var(--font-color);
+			padding: 8px 12px;
+			font-size: 12px;
+			font-weight: bold;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			border-radius: 6px 6px 0 0;
+			border: 1px solid rgba(128,128,128,0.3);
+			border-bottom: none;
+		}
+		.board-category .boards-list {
+			border-radius: 0 0 6px 6px;
+		}
+		/* Site Stats - Horizontal Cards */
+		.site-stats-container {
+			display: flex;
+			justify-content: center;
+			gap: 0;
+			max-width: 600px;
+			margin: 20px auto;
+			background: rgba(0,0,0,0.2);
+			border-radius: 4px;
+			overflow: hidden;
+		}
+		.stat-card {
+			flex: 1;
+			text-align: center;
+			padding: 20px 15px;
+			border-right: 1px solid rgba(128,128,128,0.2);
+		}
+		.stat-card:last-child {
+			border-right: none;
+		}
+		.stat-number {
+			font-size: 24px;
+			font-weight: bold;
+			color: var(--font-color);
+			margin-bottom: 4px;
+		}
+		.stat-label {
+			font-size: 13px;
+			color: var(--quote-color);
+			opacity: 0.8;
+		}
+		.home-section-content {
+			padding: 0;
+			max-height: 600px;
+			overflow-y: auto;
+		}
+		.recent-post-item {
+			padding: 8px 12px;
+			border-bottom: 1px solid rgba(128,128,128,0.2);
+			font-size: 13px;
+			transition: background 0.2s;
+		}
+		.recent-post-item:hover {
+			background: linear-gradient(rgba(0,0,0,0.03), rgba(0,0,0,0.03)), var(--background-rest);
+		}
+		.recent-post-item:last-child {
+			border-bottom: none;
+		}
+		.recent-post-board {
+			color: #000;
+			font-weight: bold;
+			margin-right: 5px;
+		}
+		.recent-post-link {
+			color: #000;
+			text-decoration: none;
+			transition: color 0.2s;
+		}
+		.recent-post-link:hover {
+			color: #333;
+		}
+		.featured-thread-item {
+			display: flex;
+			padding: 10px 12px;
+			border-bottom: 1px solid rgba(128,128,128,0.2);
+			gap: 10px;
+			transition: background 0.2s;
+		}
+		.featured-thread-item:hover {
+			background: linear-gradient(rgba(0,0,0,0.03), rgba(0,0,0,0.03)), var(--background-rest);
+		}
+		.featured-thread-item:last-child {
+			border-bottom: none;
+		}
+		.featured-thread-thumb {
+			width: 60px;
+			height: 60px;
+			object-fit: cover;
+			border-radius: 3px;
+			flex-shrink: 0;
+		}
+		.featured-thread-info {
+			flex: 1;
+			min-width: 0;
+		}
+		.featured-thread-board {
+			color: #000;
+			font-size: 12px;
+			font-weight: bold;
+		}
+		.featured-thread-title {
+			color: #000;
+			font-size: 13px;
+			font-weight: bold;
+			margin: 2px 0;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.featured-thread-meta {
+			color: #333;
+			font-size: 11px;
+		}
+		.recent-images-section {
+			max-width: 1200px;
+			margin: 15px auto;
+			padding: 0 15px;
+			background: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)), var(--background-rest);
+			border: 1px solid rgba(128,128,128,0.3);
+			border-radius: 6px;
+			padding: 5px;
+		}
+		.recent-images-scroll {
+			display: flex;
+			gap: 8px;
+			padding: 10px;
+			overflow-x: auto;
+			scrollbar-width: thin;
+		}
+		.recent-images-scroll::-webkit-scrollbar {
+			height: 8px;
+		}
+		.recent-images-scroll::-webkit-scrollbar-track {
+			background: var(--background-rest);
+		}
+		.recent-images-scroll::-webkit-scrollbar-thumb {
+			background: rgba(128,128,128,0.4);
+			border-radius: 4px;
+		}
+		.recent-image-item {
+			flex-shrink: 0;
+			width: 100px;
+			height: 100px;
+			border-radius: 4px;
+			overflow: hidden;
+			border: 1px solid rgba(128,128,128,0.2);
+			transition: transform 0.2s, border-color 0.2s;
+		}
+		.recent-image-item:hover {
+			transform: scale(1.05);
+			border-color: rgba(128,128,128,0.4);
+		}
+		.recent-image-item img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+		.welcome-banner {
+			text-align: center;
+			margin: 20px auto;
+			max-width: 600px;
+		}
+		.welcome-banner img {
+			max-width: 100%;
+			height: auto;
+			min-width: 200px;
+			max-height: 120px;
+		}
+		.welcome-textbox {
+			margin-top: 16px;
+			padding: 12px 16px;
+			background: linear-gradient(rgba(0,0,0,0.08), rgba(0,0,0,0.08)), var(--background-rest);
+			border: 1px solid rgba(128,128,128,0.3);
+			font-size: 13px;
+			line-height: 1.6;
+			text-align: center;
+		}
+		.welcome-textbox a {
+			text-decoration: underline;
+			font-weight: 600;
+		}
+		@media (max-width: 768px) {
+			.welcome-banner img {
+				min-width: 120px;
+				max-height: 80px;
+			}
+		}
+		@media (max-width: 480px) {
+			.welcome-banner img {
+				min-width: 100px;
+				max-height: 60px;
+			}
+		}
+		@media (max-width: 900px) {
+			.home-main-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+		@media (max-width: 768px) {
+			.boards-section, .home-main-grid {
+				padding: 0 10px;
+				margin: 10px auto;
+			}
+			.home-section, .boards-list {
+				margin: 0;
+			}
+			.board-item {
+				padding: 8px 10px;
+			}
+			.recent-post-item, .featured-thread-item {
+				padding: 6px 10px;
+			}
+			.home-section-header {
+				padding: 5px 10px;
+			}
+		}
+		/* Boards Grid - Compact Card Layout */
+		.boards-grid-section {
+			max-width: 1200px;
+			margin: 20px auto;
+			padding: 0 15px;
+		}
+		.welcome-banner {
+			text-align: center;
+			padding: 20px 15px;
+		}
+		.welcome-banner img {
+			max-width: 100%;
+			max-height: 200px;
+			width: auto;
+			height: auto;
+			object-fit: contain;
+		}
+		.boards-grid {
+			display: grid;
+			grid-template-columns: repeat(5, 1fr);
+			gap: 10px;
+			max-width: 1000px;
+			margin: 0 auto;
+		}
+		.board-card {
+			background: linear-gradient(rgba(0,0,0,0.15), rgba(0,0,0,0.15)), var(--label-color);
+			border: 1px solid rgba(128,128,128,0.3);
+			border-radius: 0;
+			transition: background 0.2s, border-color 0.2s;
+			cursor: pointer;
+		}
+		.board-card:hover {
+			background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), var(--label-color);
+			border-color: rgba(128,128,128,0.5);
+		}
+		.board-card a {
+			display: block;
+			padding: 12px 10px;
+			text-decoration: none;
+			text-align: center;
+			color: var(--font-color);
+		}
+		.board-card-name {
+			font-size: 16px;
+			font-weight: bold;
+			color: var(--font-color);
+		}
+		.board-card-fullname {
+			font-size: 11px;
+			color: var(--font-color);
+			opacity: 0.7;
+			margin-top: 4px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		@media (max-width: 900px) {
+			.boards-grid {
+				grid-template-columns: repeat(4, 1fr);
+				gap: 8px;
+			}
+		}
+		@media (max-width: 600px) {
+			.boards-grid {
+				grid-template-columns: repeat(4, 1fr);
+				gap: 6px;
+			}
+			.boards-grid-section {
+				padding: 0 10px;
+			}
+		}
+		@media (max-width: 480px) {
+			.boards-grid {
+				grid-template-columns: repeat(2, 1fr);
+				gap: 6px;
+			}
+			.board-card a {
+				padding: 10px 8px;
+			}
+			.board-card-name {
+				font-size: 14px;
+			}
+			.board-card-fullname {
+				font-size: 10px;
+			}
+		}
+		@media (max-width: 480px) {
+			.boards-grid {
+				grid-template-columns: repeat(2, 1fr);
+				gap: 6px;
+			}
+			.boards-grid-section {
+				padding: 0 10px;
+			}
+			.welcome-banner {
+				padding: 15px 10px;
+			}
+			.welcome-banner img {
+				max-height: 120px;
+			}
+		}
 
 block content
-	.table-container.flex-center.mt-2.text-center
-		img.title-logo(src='/file/induschan-logo.png' alt='Induschan')
-	.table-container.flex-center.mv-10
-		table(style='max-width:600px')
-			tr
-				th Welcome to Induschan
-			tr
-				td
-					| <strong>Induschan</strong> is an India-based imageboard for indians to share their thoughts and discuss their interests and lifestyle. Feel free to share your thoughts with fellow brothers, but remember to read the <a href="/rules.html">Rules</a> and the <a href="/faq.html">FAQ</a> before posting.
-	.table-container.flex-center.mv-10.text-center
-		img(src='/file/king.jpg' alt='King' style='max-width: 100%; height: auto;')
-	if recentPosts && recentPosts.length > 0
-		.table-container.flex-center.mv-10.latest-posts
-			table(style='max-width:600px')
-				tr
-					th(colspan=3) Latest Posts
-				each post, i in recentPosts
-					tr
-						td
-							a(href=`/${post.board}/thread/${post.thread ? post.thread : post.postId}.html#${post.postId}`)
+	.welcome-banner
+		img.title-logo(src=`/file/induschan-logo.png?v=${commit}` alt='Induschan' style='max-width:100%;height:auto;object-fit:contain;')
+		.welcome-textbox
+			p Induschan is an India-based imageboard for indians to share their thoughts and discuss their interests and lifestyle. Feel free to share your thoughts with fellow brothers, but remember to read 
+				a(href='/rules.html') the Rules
+				|  and the 
+				a(href='/faq.html') FAQ
+				|  before posting.
+
+	// Boards Section - All Boards Grid
+	if boards && boards.length > 0
+		.boards-grid-section
+			.boards-grid
+				each board in boards
+					.board-card
+						a(href=`/${board._id}/`)
+							.board-card-name /#{board._id}/
+							.board-card-fullname= board.settings.name || board.name
+				.board-card
+					a(href='/gen/blogs.html')
+						.board-card-name /blog/
+						.board-card-fullname (Blogs)
+
+	// Main Grid: Recent Posts + Featured Threads
+	.home-main-grid
+		// Recent Posts Section
+		.home-section
+			.home-section-header Recent Posts
+			.home-section-content
+				if recentPosts && recentPosts.length > 0
+					each post in recentPosts
+						.recent-post-item
+							a.recent-post-board(href=`/${post.board}/`) /#{post.board}/
+							span →
+							a.recent-post-link(href=`/${post.board}/thread/${post.thread ? post.thread : post.postId}.html#${post.postId}`)
 								if post.nomarkup
-									| #{post.nomarkup.substring(0,50)}#{post.nomarkup.length > 50 ? '...' : ''}
+									| #{post.nomarkup.substring(0,60)}#{post.nomarkup.length > 60 ? '...' : ''}
 								else if post.message
-									| #{post.message.substring(0,50)}#{post.message.length > 50 ? '...' : ''}
+									| #{post.message.substring(0,60)}#{post.message.length > 60 ? '...' : ''}
 								else if post.subject
-									| #{post.subject.substring(0,50)}#{post.subject.length > 50 ? '...' : ''}
+									| #{post.subject.substring(0,60)}#{post.subject.length > 60 ? '...' : ''}
 								else
-									| /${post.board}/#{post.postId}
-						td #{post.board}
-						td
-							- const postedDate = new Date(post.bumped || post.date);
-							time.right.reltime(datetime=postedDate.toISOString()) #{postedDate.toLocaleString(pageLanguage, {hourCycle:'h23'})}
-	else
-		.table-container.flex-center.mv-10.latest-posts
-			table(style='max-width:600px')
+									| No.#{post.postId}
+				else
+					.recent-post-item No recent posts
+
+		// Featured Threads Section
+		.home-section
+			.home-section-header Featured Threads
+			.home-section-content
+				if featuredThreads && featuredThreads.length > 0
+					each thread in featuredThreads
+						.featured-thread-item
+							- const thumbFile = thread.files && thread.files[0]
+							if thumbFile
+								img.featured-thread-thumb(src=`/${thread.board}/file/thumb/${thumbFile.hash}${thumbFile.thumbextension}` alt='')
+							else
+								img.featured-thread-thumb(src='/file/noimage.png' alt='')
+							.featured-thread-info
+								.featured-thread-board /#{thread.board}/
+								.featured-thread-title
+									a(href=`/${thread.board}/thread/${thread.postId}.html`)= thread.subject || `Thread No.${thread.postId}`
+								.featured-thread-meta
+									- const replyCount = thread.replyposts || 0
+									- const postedDate = new Date(thread.bumped || thread.date)
+									| #{replyCount} repl#{replyCount === 1 ? 'y' : 'ies'} • 
+									time.reltime(datetime=postedDate.toISOString()) #{postedDate.toLocaleDateString(pageLanguage, {hourCycle:'h23'})}
+				else
+					.featured-thread-item No featured threads
+
+	// Recent Images Section
+	if recentFiles && recentFiles.length > 0
+		.recent-images-section
+			.home-section-header Recent Images
+			.recent-images-scroll
+				each file in recentFiles
+					a.recent-image-item(href=`/${file.board}/thread/${file.thread}.html#${file.postId}`)
+						if file.thumbextension
+							img(src=`/${file.board}/file/thumb/${file.hash}${file.thumbextension}` alt='' loading='lazy')
+						else
+							img(src=`/${file.board}/file/${file.filename}` alt='' loading='lazy')
+
+	// Site Statistics - Horizontal Cards
+	.site-stats-container
+		.stat-card
+			.stat-number #{localStats.posts ? localStats.posts.toLocaleString() : 0}
+			.stat-label Total posts
+		.stat-card
+			.stat-number #{postsToday || 0}
+			.stat-label Posts today
+		.stat-card
+			.stat-number #{fileStats.totalSizeString || '0 MB'}
+			.stat-label Active content
+
+	if enableWebring === true && webringStats != null
+		.table-container.flex-center.mv-10.text-center
+			table(style='width: 100%; max-width: 450px')
 				tr
-					th(colspan=3) Latest Posts
+					th #{__('Webring Stats')}
 				tr
-					td(colspan=3) -
-	.table-container.flex-center.mv-10.text-center
-		table(style='max-width:600px')
-			tr
-				th(colspan=2) Site Statistics
-			tr
-				td Total Posts
-				td #{localStats.posts}
-			tr
-				td Total Content
-				td #{fileStats.count} files (#{fileStats.totalSizeString})
-		if enableWebring === true && webringStats != null
-			.table-container.flex-center.mv-10.text-center
-				table(style='max-width:450px')
-					tr
-						th #{__('Webring Stats')}
-					tr
-						td
-							pre.no-m-p
-								| #{__('There are currently %s sites and %s boards in the known webring. Across all webring boards, %s posts have been made in the last hour, %s in total.', webringStats.sites, webringStats.total, webringStats.pph, webringStats.posts)}
+					td
+						pre.no-m-p
+							| #{__('There are currently %s sites and %s boards in the known webring. Across all webring boards, %s posts have been made in the last hour, %s in total.', webringStats.sites, webringStats.total, webringStats.pph, webringStats.posts)}
+
+	script.
+		document.addEventListener('DOMContentLoaded', function() {
+			if (!localStorage.getItem('noticeDismissed')) {
+				doModal({
+					title: 'Notice',
+					message: 'Tor posting and VPN posting has been disabled for some time'
+				});
+				document.getElementById('modalclose').onclick = function() {
+					localStorage.setItem('noticeDismissed', 'true');
+					removeModal();
+				};
+				document.querySelector('.modal-bg').onclick = function() {
+					localStorage.setItem('noticeDismissed', 'true');
+					removeModal();
+				};
+			}
+		});

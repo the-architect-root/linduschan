@@ -1,0 +1,227 @@
+extends ../layout.pug
+
+block head
+	title= title
+	style.
+		.journal-form {
+			background: var(--background-rest);
+			min-height: 100vh;
+			padding: 40px 20px;
+			color: var(--font-color);
+		}
+		.journal-form-container {
+			max-width: 800px;
+			margin: 0 auto;
+			background: var(--background-rest);
+			padding: 40px;
+			border-radius: 4px;
+			border: 1px solid var(--border-color);
+		}
+		.journal-form h1 {
+			font-family: 'Georgia', serif;
+			color: var(--subject-color);
+			margin-bottom: 30px;
+			text-align: center;
+		}
+		.form-group {
+			margin-bottom: 25px;
+		}
+		.form-group label {
+			display: block;
+			margin-bottom: 8px;
+			color: var(--font-color);
+			font-size: 0.9rem;
+			font-weight: bold;
+		}
+		.form-group input,
+		.form-group textarea,
+		.form-group select {
+			width: 100%;
+			padding: 12px;
+			background: var(--background-rest);
+			border: 1px solid var(--border-color);
+			border-radius: 4px;
+			color: var(--font-color);
+			font-size: 1rem;
+			font-family: inherit;
+		}
+		.form-group input:focus,
+		.form-group textarea:focus,
+		.form-group select:focus {
+			outline: none;
+			border-color: var(--post-link-color);
+		}
+		.form-group textarea {
+			min-height: 400px;
+			resize: vertical;
+			line-height: 1.6;
+		}
+		.form-hint {
+			font-size: 0.8rem;
+			color: var(--alt-font-color);
+			margin-top: 5px;
+		}
+		.form-actions {
+			display: flex;
+			gap: 15px;
+			justify-content: center;
+			margin-top: 30px;
+		}
+		.btn-primary {
+			background: var(--background-highlighted);
+			color: var(--font-color);
+			padding: 12px 30px;
+			border: 1px solid var(--border-color);
+			border-radius: 4px;
+			font-size: 1rem;
+			font-weight: bold;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+		.btn-primary:hover {
+			background: var(--post-link-hover);
+		}
+		.btn-secondary {
+			background: transparent;
+			color: var(--alt-font-color);
+			padding: 12px 30px;
+			border: 1px solid var(--border-color);
+			border-radius: 4px;
+			font-size: 1rem;
+			cursor: pointer;
+			text-decoration: none;
+		}
+		.btn-secondary:hover {
+			border-color: var(--post-link-color);
+			color: var(--font-color);
+		}
+		.cover-type-selector {
+			display: flex;
+			gap: 15px;
+			margin-bottom: 15px;
+		}
+		.cover-type-option {
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+		.cover-type-option input {
+			width: auto;
+		}
+		.color-picker-wrapper {
+			display: none;
+		}
+		.color-picker-wrapper.active {
+			display: block;
+		}
+		.image-url-wrapper {
+			display: none;
+		}
+		.image-url-wrapper.active {
+			display: block;
+		}
+		.page-style-options {
+			display: flex;
+			gap: 20px;
+			flex-wrap: wrap;
+		}
+		.page-style-option {
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+		.page-style-option input {
+			width: auto;
+		}
+
+block content
+	.journal-form
+		.journal-form-container
+			h1 New Journal Entry
+			
+			form(action='/journals/new.html', method='POST')
+				input(type='hidden', name='_csrf', value=csrf)
+				
+				.form-group
+					label(for='title') Title *
+					input#title(type='text', name='title', required, placeholder='Enter a compelling title...')
+				
+				.form-group
+					label(for='description') Description (optional)
+					input#description(type='text', name='description', placeholder='Brief description of this journal entry...')
+					p.form-hint A short summary that appears on the cover
+				
+				.form-group
+					label Cover Type
+					.cover-type-selector
+						.cover-type-option
+							input#coverTypeColor(type='radio', name='coverType', value='color', checked, onchange='toggleCoverType()')
+							label(for='coverTypeColor') Color
+						.cover-type-option
+							input#coverTypeImage(type='radio', name='coverType', value='image', onchange='toggleCoverType()')
+							label(for='coverTypeImage') Image URL
+					
+					.color-picker-wrapper.active#colorWrapper
+						label(for='coverColor') Select Color
+						input#coverColor(type='color', name='coverColor', value='#2a3f5f')
+					
+					.image-url-wrapper#imageWrapper
+						label(for='coverImage') Image URL
+						input#coverImage(type='url', name='coverImage', placeholder='https://example.com/cover.jpg')
+				
+				.form-group
+					label Page Style
+					.page-style-options
+						.page-style-option
+							input#pageBlank(type='radio', name='pageStyle', value='blank', checked)
+							label(for='pageBlank') Blank
+						.page-style-option
+							input#pageLined(type='radio', name='pageStyle', value='lined')
+							label(for='pageLined') Lined (text aligns)
+						.page-style-option
+							input#pageDotted(type='radio', name='pageStyle', value='dotted')
+							label(for='pageDotted') Dotted
+					p.form-hint Lined pages align your text with the lines
+				
+				.form-group
+					label(for='content') Content *
+					textarea#content(name='content', required, placeholder='Write your thoughts here...')
+					p.form-hint You can use HTML tags for formatting
+				
+				.form-group
+					label(for='editCode') Edit Code (Password) *
+					input#editCode(type='password', name='editCode', required, placeholder='Create a password to edit this journal later')
+					p.form-hint Required to edit this journal later. Keep it safe!
+				
+				.form-group
+					label(for='tags') Tags (comma separated)
+					input#tags(type='text', name='tags', placeholder='personal, reflection, ideas')
+				
+				.form-group
+					label Poll (optional)
+					input#pollQuestion(type='text', name='pollQuestion', placeholder='Ask a question for your poll...')
+					.poll-options
+						input.poll-option(type='text', name='pollOptions[]', placeholder='Option 1')
+						input.poll-option(type='text', name='pollOptions[]', placeholder='Option 2')
+						input.poll-option(type='text', name='pollOptions[]', placeholder='Option 3 (optional)')
+						input.poll-option(type='text', name='pollOptions[]', placeholder='Option 4 (optional)')
+					p.form-hint Add a poll to get opinions from readers. One vote per IP.
+				
+				.form-actions
+					button.btn-primary(type='submit') Publish Entry
+					a.btn-secondary(href='/journals.html') Cancel
+		
+		script.
+			function toggleCoverType() {
+				const colorWrapper = document.getElementById('colorWrapper');
+				const imageWrapper = document.getElementById('imageWrapper');
+				const colorRadio = document.getElementById('coverTypeColor');
+				
+				if (colorRadio.checked) {
+					colorWrapper.classList.add('active');
+					imageWrapper.classList.remove('active');
+				} else {
+					colorWrapper.classList.remove('active');
+					imageWrapper.classList.add('active');
+				}
+			}

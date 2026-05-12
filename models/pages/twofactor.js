@@ -33,7 +33,7 @@ module.exports = async (req, res, next) => {
 		const totp = new OTPAuth.TOTP({
 			issuer: meta.url || 'jschan',
 			label: meta.siteName || 'jschan',
-			algorithm: 'SHA256',
+			algorithm: 'SHA1',
 		});
 		const secret = totp.secret;
 		secretBase32 = secret.base32;

@@ -1,0 +1,36 @@
+extends ../layout.pug
+include ../mixins/boardheader.pug
+
+block head
+	title #{__('New Blog')} - #{board._id}
+
+block content
+	+boardheader(__('New Blog'))
+	.blog-container
+		.blog-nav
+			a(href=`/${board._id}/blogs.html`) &larr; #{__('All Blogs')}
+		hr(size=1)
+		.blog-form-container
+			h1.blog-form-title #{__('Create New Blog')}
+			form(action=`/forms/board/${board._id}/blog` method='POST' enctype='multipart/form-data')
+				.row
+					.label #{__('Title')} *
+					input(type='text' name='title' placeholder='Blog title' maxlength='100' required)
+				.row
+					.label #{__('Description')} *
+					textarea(name='description' placeholder='Brief summary shown in the blog feed...' rows='3' required)
+				.row
+					.label #{__('Author')}
+					input(type='text' name='author' placeholder='Leave blank for Anon' maxlength='50')
+				.row
+					.label #{__('Edit Code')} *
+					input(type='password' name='editCode' placeholder='Set a password to manage this blog' required)
+					small.blog-help #{__('You will need this code to manage and edit your blog')}
+			.row
+				.label #{__('Cover Image')}
+				button#coverPickBtn(type='button') #{__('Choose Image')}
+				input#coverInput(type='file' name='cover' accept='image/*' style='display:none;')
+				.row
+					input#submitpost(type='submit' value=__('Create Blog'))
+					a.ml-5(href=`/${board._id}/blogs.html`) #{__('Cancel')}
+	hr(size=1)

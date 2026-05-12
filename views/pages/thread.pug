@@ -27,6 +27,8 @@ block head
 						- break
 
 block content
+	if !modview
+		include ../includes/catalogviewer.pug
 	+boardheader(modview ? __('Mod View') : null)
 	br
 	if thread.replyposts >= board.settings.replyLimit && !thread.cyclic && !modview

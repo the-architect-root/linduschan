@@ -25,7 +25,7 @@ block content
 		if modview
 			input(type='hidden' name='_csrf' value=csrf)
 		hr(size=1)
-		if threads.length === 0
+		if threads.length === 0 && (!blogs || blogs.length === 0)
 			p #{__('No posts.')}
 			hr(size=1)
 		for thread in threads
@@ -34,6 +34,38 @@ block content
 				for post in thread.replies
 					+post(post, true)
 			hr(size=1)
+		if blogs && blogs.length > 0
+			each blog in blogs
+				.thread.blog-board-thread
+					.post-container.blog-board-entry
+						.post-info
+							span.name Anon
+							|  
+							span.date(title=blog.date.toISOString()) #{blog.date.toLocaleString(pageLanguage, { hourCycle:'h23' })}
+							|  
+							span.post-num
+								a(href=`/${board._id}/blog/${blog._id}.html`) No.#{blog._id}
+						.blog-board-title-row
+							a.blog-board-title(href=`/${board._id}/blog/${blog._id}.html`)= blog.title
+						- const displayMedia = (blog.entries && blog.entries[0] && blog.entries[0].contentMedia && blog.entries[0].contentMedia.length > 0) ? blog.entries[0].contentMedia : (blog.contentMedia || []);
+						if displayMedia && displayMedia.length > 0
+							.blog-board-media
+								each media in displayMedia
+									if media.type === 'video'
+										a.blog-board-media-link(href=`/${board._id}/blog/${blog._id}.html`)
+											video.blog-board-media-thumb(src=(media.url || `/file/${media.filename}`) preload='metadata' playsinline)
+									else if media.type === 'audio'
+										a.blog-board-media-link(href=`/${board._id}/blog/${blog._id}.html`)
+											img.blog-board-media-thumb(src='/file/audio.png' alt='audio')
+									else
+										a.blog-board-media-link(href=`/${board._id}/blog/${blog._id}.html`)
+											img.blog-board-media-thumb(src=(media.url || `/file/${media.filename}`) alt='Blog media' loading='lazy')
+						.blog-board-desc= blog.description.length > 400 ? blog.description.substring(0, 400) + '...' : blog.description
+						.blog-board-footer
+							a(href=`/${board._id}/blog/${blog._id}.html`) #{blog.replies.length} #{__('replies')}
+							|  
+							a(href=`/${board._id}/blog/${blog._id}.html?tab=interact`) #{__('Reply')}
+				hr(size=1)
 		if modview
 			+managenav('index')
 		else

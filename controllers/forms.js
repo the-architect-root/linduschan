@@ -11,13 +11,17 @@ const express  = require('express')
 	, hasPerms = require(__dirname+'/../lib/middleware/permission/haspermsmiddleware.js')
 	, numFiles = require(__dirname+'/../lib/middleware/file/numfiles.js')
 	, imageHashes = require(__dirname+'/../lib/middleware/file/imagehash.js')
+	, hashBanCheck = require(__dirname+'/../lib/middleware/file/hashbancheck.js')
 	, banCheck = require(__dirname+'/../lib/middleware/permission/bancheck.js')
 	, isLoggedIn = require(__dirname+'/../lib/middleware/permission/isloggedin.js')
 	, verifyCaptcha = require(__dirname+'/../lib/middleware/captcha/verify.js')
 	, csrf = require(__dirname+'/../lib/middleware/misc/csrfmiddleware.js')
+	, referrerCheck = require(__dirname+'/../lib/middleware/misc/referrercheck.js')
 	, useSession = require(__dirname+'/../lib/middleware/permission/usesession.js')
 	, sessionRefresh = require(__dirname+'/../lib/middleware/permission/sessionrefresh.js')
 	, dnsblCheck = require(__dirname+'/../lib/middleware/ip/dnsbl.js')
+	, vpnBlock = require(__dirname+'/../lib/middleware/ip/vpnblock.js')
+	, anonymizerBlock = require(__dirname+'/../lib/middleware/ip/anonymizerblock.js')
 	, blockBypass = require(__dirname+'/../lib/middleware/captcha/blockbypass.js')
 	, fileMiddlewares = require(__dirname+'/../lib/middleware/file/filemiddlewares.js')
 	, { setBoardLanguage, setQueryLanguage } = require(__dirname+'/../lib/middleware/locale/locale.js')
@@ -28,15 +32,16 @@ const express  = require('express')
 		deleteFlagsController, boardSettingsController, transferController, addAssetsController, deleteAssetsController,
 		resignController, deleteAccountController, loginController, registerController, changePasswordController,
 		deleteAccountsController, editAccountController, addFilterController, editFilterController, deleteFilterController, 
-		globalSettingsController, createBoardController, makePostController, addStaffController, deleteStaffController, 
-		editStaffController, editCustomPageController, editPostController, editRoleController, newCaptchaForm, 
-		blockBypassForm, logoutForm, deleteSessionsController, globalClearController, blockBoardController } = require(__dirname+'/forms/index.js');
+		globalSettingsController, featureThreadController, unfeatureThreadController, makePostController, 
+		addStaffController, deleteStaffController, editStaffController, editCustomPageController, editPostController, 
+		editRoleController, newCaptchaForm, blockBypassForm, logoutForm, deleteSessionsController, globalClearController, 
+		blockBoardController, blogController } = require(__dirname+'/forms/index.js');
 
 //make new post
-router.post('/board/:board/post', geoIp, processIp, useSession, sessionRefresh, Boards.exists, setBoardLanguage, calcPerms, banCheck, fileMiddlewares.posts,
-	makePostController.paramConverter, verifyCaptcha, numFiles, blockBypass.middleware, dnsblCheck, imageHashes, makePostController.controller);
+router.post('/board/:board/post', geoIp, processIp, useSession, sessionRefresh, Boards.exists, setBoardLanguage, calcPerms, banCheck, referrerCheck, fileMiddlewares.posts,
+	makePostController.paramConverter, verifyCaptcha, numFiles, hashBanCheck, blockBypass.middleware, vpnBlock, anonymizerBlock, dnsblCheck, imageHashes, makePostController.controller);
 router.post('/board/:board/modpost', geoIp, processIp, useSession, sessionRefresh, Boards.exists, setBoardLanguage, calcPerms, banCheck, isLoggedIn,
-	hasPerms.one(Permissions.MANAGE_BOARD_GENERAL), fileMiddlewares.posts, makePostController.paramConverter, csrf, numFiles, blockBypass.middleware, dnsblCheck, imageHashes, makePostController.controller); //mod post has token instead of captcha
+	hasPerms.one(Permissions.MANAGE_BOARD_GENERAL), fileMiddlewares.posts, makePostController.paramConverter, csrf, numFiles, hashBanCheck, blockBypass.middleware, anonymizerBlock, dnsblCheck, imageHashes, makePostController.controller); //mod post has token instead of captcha
 
 //post actions
 router.post('/board/:board/actions', geoIp, processIp, useSession, sessionRefresh, Boards.exists, setBoardLanguage, calcPerms, banCheck, actionController.paramConverter, verifyCaptcha, actionController.controller); //public, with captcha
@@ -48,6 +53,13 @@ router.post('/global/actions', geoIp, processIp, useSession, sessionRefresh, csr
 
 //appeal ban
 router.post('/appeal', geoIp, processIp, useSession, sessionRefresh, appealController.paramConverter, verifyCaptcha, appealController.controller);
+
+//featured threads (admin only)
+router.post('/featurethread', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn,
+	hasPerms.one(Permissions.MANAGE_GLOBAL_SETTINGS), featureThreadController);
+router.post('/unfeaturethread', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn,
+	hasPerms.one(Permissions.MANAGE_GLOBAL_SETTINGS), unfeatureThreadController);
+
 //edit post
 router.post('/editpost', geoIp, processIp, useSession, sessionRefresh, csrf, editPostController.paramConverter, Boards.bodyExists, setBoardLanguage, calcPerms,
 	hasPerms.any(Permissions.MANAGE_GLOBAL_GENERAL, Permissions.MANAGE_BOARD_GENERAL), editPostController.controller);
@@ -122,9 +134,6 @@ router.post('/global/settings', geoIp, processIp, useSession, sessionRefresh, cs
 router.post('/global/clear', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn,
 	hasPerms.one(Permissions.MANAGE_GLOBAL_SETTINGS), globalClearController.paramConverter, globalClearController.controller); //global clear
 
-//create board
-router.post('/create', geoIp, processIp, useSession, sessionRefresh, isLoggedIn, calcPerms, verifyCaptcha, createBoardController.paramConverter, createBoardController.controller);
-
 //accounts
 router.post('/login', useSession, loginController.paramConverter, loginController.controller);
 router.post('/twofactor', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, twofactorController.paramConverter, twofactorController.controller);
@@ -136,17 +145,70 @@ router.post('/deleteaccount', useSession, sessionRefresh, csrf, calcPerms, isLog
 router.post('/deletesessions', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, deleteSessionsController.paramConverter, deleteSessionsController.controller);
 
 //block/unblock boards
-router.post('/blockboard', useSession, sessionRefresh, calcPerms, isLoggedIn, blockBoardController.blockBoard);
-router.post('/unblockboard', useSession, sessionRefresh, calcPerms, isLoggedIn, blockBoardController.unblockBoard);
+router.post('/blockboard', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, blockBoardController.blockBoard);
+router.post('/unblockboard', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, blockBoardController.unblockBoard);
 router.get('/blockedboards', useSession, sessionRefresh, calcPerms, isLoggedIn, blockBoardController.getBlockedBoards);
-router.post('/approveunblock', useSession, sessionRefresh, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.approveUnblockRequest);
-router.post('/rejectunblock', useSession, sessionRefresh, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.rejectUnblockRequest);
+router.post('/approveunblock', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.approveUnblockRequest);
+router.post('/rejectunblock', useSession, sessionRefresh, csrf, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.rejectUnblockRequest);
 router.get('/unblockrequests', useSession, sessionRefresh, calcPerms, isLoggedIn, hasPerms.one(Permissions.MANAGE_GLOBAL_ACCOUNTS), blockBoardController.getAllUnblockRequests);
 
 //removes captcha cookie, for refreshing for noscript users
 router.post('/newcaptcha', newCaptchaForm);
 //solve captcha for block bypass
 router.post('/blockbypass', geoIp, processIp, useSession, sessionRefresh, calcPerms, setQueryLanguage, csrf, verifyCaptcha, blockBypassForm);
+
+//poll voting
+const Posts = require(__dirname+'/../db/posts.js');
+router.post('/vote-poll', geoIp, processIp, useSession, sessionRefresh, async (req, res) => {
+	try {
+		const { board, postId, option } = req.body;
+		const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+		console.log('Poll vote request:', { board, postId, option, ip });
+
+		const result = await Posts.votePoll(board, postId, parseInt(option), ip);
+
+		console.log('Poll vote result:', result);
+
+		if (result.success) {
+			return res.json({ success: true });
+		} else {
+			return res.status(400).json({ success: false, error: result.error });
+		}
+	} catch (err) {
+		console.error('Poll vote error:', err);
+		return res.status(500).json({ success: false, error: 'Server error' });
+	}
+});
+
+router.get('/poll-results', async (req, res) => {
+	try {
+		const { board, postId } = req.query;
+		const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+		
+		const results = await Posts.getPollResults(board, postId, ip);
+		
+		if (!results) {
+			return res.status(404).json({ error: 'Poll not found' });
+		}
+		
+		return res.json(results);
+	} catch (err) {
+		console.error('Poll results error:', err);
+		return res.status(500).json({ error: 'Server error' });
+	}
+});
+
+//blog routes (only /gen/)
+const setGenBoard = (req, res, next) => { req.params.board = 'gen'; next(); };
+router.post('/board/gen/blog', geoIp, processIp, useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, calcPerms, banCheck, referrerCheck, fileMiddlewares.posts, blogController.paramConverter, verifyCaptcha, blogController.create);
+router.post('/board/gen/blog/add-entry', geoIp, processIp, useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, calcPerms, banCheck, referrerCheck, fileMiddlewares.posts, blogController.paramConverter, verifyCaptcha, blogController.addEntry);
+router.post('/board/gen/blog/edit-entry', geoIp, processIp, useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, calcPerms, banCheck, referrerCheck, fileMiddlewares.posts, blogController.paramConverter, blogController.editEntry);
+router.post('/board/gen/blog/delete-entry', useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, blogController.deleteEntry);
+router.post('/board/gen/blog/settings', useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, blogController.updateSettings);
+router.post('/board/gen/blog/delete', useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, blogController.delete);
+router.post('/board/gen/blog/reply', geoIp, processIp, useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, calcPerms, banCheck, blogController.reply);
+router.post('/board/gen/blog/moderate-reply', useSession, sessionRefresh, setGenBoard, Boards.exists, setBoardLanguage, blogController.moderateReply);
 
 module.exports = router;
 
