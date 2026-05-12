@@ -23,7 +23,7 @@ try {
 	yandex = secrets.yandex;
 } catch (e) {
 	// Fallback to environment variables
-	port = parseInt(process.env.PORT) || 3000;
+	port = parseInt(process.env.PORT) || 7000;
 	cookieSecret = process.env.COOKIE_SECRET || 'default-secret';
 	debugLogs = process.env.DEBUG_LOGS === 'true';
 	google = process.env.GOOGLE_CAPTCHA_SITE_KEY ? { siteKey: process.env.GOOGLE_CAPTCHA_SITE_KEY, secretKey: process.env.GOOGLE_CAPTCHA_SECRET_KEY } : null;
