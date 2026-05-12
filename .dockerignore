@@ -7,3 +7,9 @@ docker/static/
 tools/
 !tools/festrings.json
 gulp/res/js/socket.io.js
+static/uploads/
+static/[a-z]*/
+static/captcha/
+logs/
+data/
+backups/
