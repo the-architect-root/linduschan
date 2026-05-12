@@ -47,3 +47,9 @@ init_roles.js
 reset_admin_password.js
 migrate-files-to-board-folders.js
 scripts/
+
+# large AI models
+ai/
+ai/
+backups/
+data/
